@@ -12,6 +12,8 @@
             }
         },
         "customCloudProfile": {
+            "identitySystem": "azure_ad",
+            "authenticationMethod": "client_secret",
             "portalURL": "https://<portal Url>/"
         },
         "masterProfile": {
