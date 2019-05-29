@@ -459,6 +459,13 @@ const (
 )
 
 const (
+	// DefaultAzureStackKubernetesImageBase is the default image for Kubernetes on Azure Stack
+	DefaultAzureStackKubernetesImageBase = "msazurestackdocker/"
+	// DefaultAzureStackKubernetesImageBase is the default image for Kubernetes on Azure Stack in China
+	DefaultAzureStackKubernetesImageBaseChina = "dockerhub.azk8s.cn/msazurestackdocker/"
+)
+
+const (
 	// AzureADIdentitySystem is a const string reference identifier for Azure AD identity System
 	AzureADIdentitySystem = "azure_ad"
 	// ADFSIdentitySystem is a const string reference identifier for ADFS identity System

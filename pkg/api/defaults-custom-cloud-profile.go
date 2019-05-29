@@ -102,20 +102,26 @@ func (p *Properties) SetAzureStackCloudSpec() error {
 		switch p.CustomCloudProfile.DependenciesLocation {
 		case AzureStackDependenciesLocationPublic:
 			azureStackCloudSpec = AzureCloudSpecEnvMap[AzurePublicCloud]
+			azureStackCloudSpec.KubernetesSpecConfig.KubernetesImageBase = DefaultAzureStackKubernetesImageBase
 		case AzureStackDependenciesLocationChina:
 			azureStackCloudSpec = AzureCloudSpecEnvMap[AzureChinaCloud]
+			azureStackCloudSpec.KubernetesSpecConfig.KubernetesImageBase = DefaultAzureStackKubernetesImageBaseChina
 		case AzureStackDependenciesLocationGerman:
 			azureStackCloudSpec = AzureCloudSpecEnvMap[AzureGermanCloud]
+			azureStackCloudSpec.KubernetesSpecConfig.KubernetesImageBase = DefaultAzureStackKubernetesImageBase
 		case AzureStackDependenciesLocationUSGovernment:
 			azureStackCloudSpec = AzureCloudSpecEnvMap[AzureUSGovernmentCloud]
+			azureStackCloudSpec.KubernetesSpecConfig.KubernetesImageBase = DefaultAzureStackKubernetesImageBase
 		default:
 			azureStackCloudSpec = AzureCloudSpecEnvMap[AzurePublicCloud]
+			azureStackCloudSpec.KubernetesSpecConfig.KubernetesImageBase = DefaultAzureStackKubernetesImageBase
 		}
 		if p.CustomCloudProfile.Environment == nil || p.CustomCloudProfile.Environment.ResourceManagerVMDNSSuffix == "" {
 			return errors.New("Failed to set Cloud Spec for Azure Stack due to invalid environment")
 		}
 		azureStackCloudSpec.EndpointConfig.ResourceManagerVMDNSSuffix = p.CustomCloudProfile.Environment.ResourceManagerVMDNSSuffix
 		azureStackCloudSpec.CloudName = AzureStackCloud
+
 		// Use the custom input to overwrite the default values in AzureStackCloudSpec
 		if p.CustomCloudProfile.AzureEnvironmentSpecConfig != nil {
 			ascc := p.CustomCloudProfile.AzureEnvironmentSpecConfig
