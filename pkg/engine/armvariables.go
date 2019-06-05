@@ -457,7 +457,7 @@ func getK8sMasterVars(cs *api.ContainerService) (map[string]interface{}, error) 
 	masterVars["singleQuote"] = "'"
 
 	if cs.Properties.HasWindows() {
-		masterVars["windowsCustomScriptSuffix"] = " $inputFile = '%SYSTEMDRIVE%\\AzureData\\CustomData.bin' ; $outputFile = '%SYSTEMDRIVE%\\AzureData\\CustomDataSetupScript.ps1' ; Copy-Item $inputFile $outputFile ; Invoke-Expression('{0} {1}' -f $outputFile, $arguments) ; "
+		masterVars["windowsCustomScriptSuffix"] = `[concat(' $inputFile = \"%SYSTEMDRIVE%\\AzureData\\CustomData.bin\" ; $outputFile = \"%SYSTEMDRIVE%\\AzureData\\CustomDataSetupScript.ps1\" ; Copy-Item $inputFile $outputFile ; $env:AZURE_ENVIRONMENT_FILEPATH=\"%SYSTEMDRIVE%\\k\\azurestackcloud.json\" ; echo \"', variables('environmentJSON'),'\" > $env:AZURE_ENVIRONMENT_FILEPATH ; Invoke-Expression(\"{0} {1}\" -f $outputFile, $arguments) ; ')'`
 	}
 
 	if enableEncryptionWithExternalKms {

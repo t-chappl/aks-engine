@@ -40,7 +40,11 @@ param(
 
     [parameter(Mandatory=$true)]
     [ValidateNotNullOrEmpty()]
-    $AADClientSecret # base64
+    $AADClientSecret, # base64
+
+    [parameter(Mandatory=$true)]
+    [ValidateNotNullOrEmpty()]
+    $TargetEnvironment
 )
 
 
@@ -192,7 +196,8 @@ try
             -UserAssignedClientID $global:UserAssignedClientID `
             -UseInstanceMetadata $global:UseInstanceMetadata `
             -LoadBalancerSku $global:LoadBalancerSku `
-            -ExcludeMasterFromStandardLB $global:ExcludeMasterFromStandardLB
+            -ExcludeMasterFromStandardLB $global:ExcludeMasterFromStandardLB `
+            -TargetEnvironment $TargetEnvironment
 
         Write-Log "Write ca root"
         Write-CACert -CACertificate $global:CACertificate `

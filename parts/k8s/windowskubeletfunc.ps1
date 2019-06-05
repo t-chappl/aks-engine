@@ -39,7 +39,9 @@ Write-AzureConfig {
         [Parameter(Mandatory = $true)][string]
         $ExcludeMasterFromStandardLB,
         [Parameter(Mandatory = $true)][string]
-        $KubeDir
+        $KubeDir,
+        [Parameter(Mandatory = $true)][string]
+        $TargetEnvironment
     )
 
     if ( -Not $PrimaryAvailabilitySetName -And -Not $PrimaryScaleSetName ) {
@@ -50,6 +52,7 @@ Write-AzureConfig {
 
     $azureConfig = @"
 {
+    "cloud": "$TargetEnvironment",
     "tenantId": "$TenantId",
     "subscriptionId": "$SubscriptionId",
     "aadClientId": "$AADClientId",
