@@ -40,7 +40,15 @@ param(
 
     [parameter(Mandatory=$true)]
     [ValidateNotNullOrEmpty()]
-    $AADClientSecret # base64
+    $AADClientSecret, # base64
+
+    [parameter(Mandatory=$true)]
+    [ValidateNotNullOrEmpty()]
+    $TargetEnvironment,
+
+    [string]
+    [ValidateNotNull()]
+    $EnvironmentJSON
 )
 
 
@@ -193,6 +201,11 @@ try
             -UseInstanceMetadata $global:UseInstanceMetadata `
             -LoadBalancerSku $global:LoadBalancerSku `
             -ExcludeMasterFromStandardLB $global:ExcludeMasterFromStandardLB
+
+        if  ($TargetEnvironment -eq "AzureStackCloud") {
+            $azureStackConfigFile = [io.path]::Combine($global:KubeDir, "azurestackcloud.json")
+            $EnvironmentJSON | Out-File -encoding ASCII -filepath "$azureStackConfigFile"
+        }
 
         Write-Log "Write ca root"
         Write-CACert -CACertificate $global:CACertificate `
