@@ -633,6 +633,7 @@ func (t *TemplateGenerator) getTemplateFuncMap(cs *api.ContainerService) templat
 		},
 		"GetEnvironmentJSON": func() string {
 			customEnvironmentJSON, _ := cs.Properties.GetCustomEnvironmentJSON(false)
+			customEnvironmentJSON = strings.Replace(customEnvironmentJSON, `"`, `""`, -1)
 			return customEnvironmentJSON
 		},
 	}
