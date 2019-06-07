@@ -44,11 +44,7 @@ param(
 
     [parameter(Mandatory=$true)]
     [ValidateNotNullOrEmpty()]
-    $TargetEnvironment,
-
-    [string]
-    [ValidateNotNull()]
-    $EnvironmentJSON
+    $TargetEnvironment
 )
 
 
@@ -204,8 +200,8 @@ try
             -TargetEnvironment $TargetEnvironment
 
         {{if IsAzureStackCloud}}
-            $azureStackConfigFile = [io.path]::Combine($global:KubeDir, "azurestackcloud.json")
-            '{{ GetEnvironmentJSON }}' | Out-File -encoding ASCII -filepath "$azureStackConfigFile"
+        $azureStackConfigFile = [io.path]::Combine($global:KubeDir, "azurestackcloud.json")
+        '{{ GetEnvironmentJSON }}' | Out-File -encoding ASCII -filepath "$azureStackConfigFile"
         {{end}}
 
         Write-Log "Write ca root"
