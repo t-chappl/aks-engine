@@ -631,6 +631,10 @@ func (t *TemplateGenerator) getTemplateFuncMap(cs *api.ContainerService) templat
 		"IsCustomVNET": func() bool {
 			return cs.Properties.AreAgentProfilesCustomVNET()
 		},
+		"GetEnvironmentJSON": func() string {
+			customEnvironmentJSON, _ := cs.Properties.GetCustomEnvironmentJSON(false)
+			return customEnvironmentJSON
+		},
 	}
 }
 
