@@ -200,7 +200,8 @@ try
             -UserAssignedClientID $global:UserAssignedClientID `
             -UseInstanceMetadata $global:UseInstanceMetadata `
             -LoadBalancerSku $global:LoadBalancerSku `
-            -ExcludeMasterFromStandardLB $global:ExcludeMasterFromStandardLB
+            -ExcludeMasterFromStandardLB $global:ExcludeMasterFromStandardLB `
+            -TargetEnvironment $TargetEnvironment
 
         if  ($TargetEnvironment -eq "AzureStackCloud") {
             $azureStackConfigFile = [io.path]::Combine($global:KubeDir, "azurestackcloud.json")
