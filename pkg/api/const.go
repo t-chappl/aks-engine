@@ -246,12 +246,16 @@ const (
 const (
 	// DefaultWindowsPublisher sets the default WindowsPublisher value in WindowsProfile
 	DefaultWindowsPublisher = "MicrosoftWindowsServer"
+	DefaultWindowsPublisherAzureStack = "MicrosoftWindowsServer"
 	// DefaultWindowsOffer sets the default WindowsOffer value in WindowsProfile
 	DefaultWindowsOffer = "WindowsServerSemiAnnual"
+	DefaultWindowsOfferAzureStack = "WindowsServer"
 	// DefaultWindowsSku sets the default WindowsSku value in WindowsProfile
 	DefaultWindowsSku = "Datacenter-Core-1809-with-Containers-smalldisk"
+	DefaultWindowsSkuAzureStack = "2019-Datacenter-with-Containers"
 	// DefaultImageVersion sets the default ImageVersion value in WindowsProfile
 	DefaultImageVersion = "1809.0.20190314"
+	DefaultImageVersionAzureStack = "2016.127.20190521"
 )
 
 const (

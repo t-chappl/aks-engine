@@ -605,17 +605,32 @@ func (p *Properties) setAgentProfileDefaults(isUpgrade, isScale bool, cloudName 
 func (p *Properties) setWindowsProfileDefaults(isUpgrade, isScale bool) {
 	windowsProfile := p.WindowsProfile
 	if !isUpgrade && !isScale {
-		if windowsProfile.WindowsPublisher == "" {
-			windowsProfile.WindowsPublisher = DefaultWindowsPublisher
-		}
-		if windowsProfile.WindowsOffer == "" {
-			windowsProfile.WindowsOffer = DefaultWindowsOffer
-		}
-		if windowsProfile.WindowsSku == "" {
-			windowsProfile.WindowsSku = DefaultWindowsSku
-		}
-		if windowsProfile.ImageVersion == "" {
-			windowsProfile.ImageVersion = DefaultImageVersion
+		if p.IsAzureStackCloud() {
+			if windowsProfile.WindowsPublisher == "" {
+				windowsProfile.WindowsPublisher = DefaultWindowsPublisherAzureStack
+			}
+			if windowsProfile.WindowsOffer == "" {
+				windowsProfile.WindowsOffer = DefaultWindowsOfferAzureStack
+			}
+			if windowsProfile.WindowsSku == "" {
+				windowsProfile.WindowsSku = DefaultWindowsSkuAzureStack
+			}
+			if windowsProfile.ImageVersion == "" {
+				windowsProfile.ImageVersion = DefaultImageVersionAzureStack
+			}
+		} else {
+			if windowsProfile.WindowsPublisher == "" {
+				windowsProfile.WindowsPublisher = DefaultWindowsPublisher
+			}
+			if windowsProfile.WindowsOffer == "" {
+				windowsProfile.WindowsOffer = DefaultWindowsOffer
+			}
+			if windowsProfile.WindowsSku == "" {
+				windowsProfile.WindowsSku = DefaultWindowsSku
+			}
+			if windowsProfile.ImageVersion == "" {
+				windowsProfile.ImageVersion = DefaultImageVersion
+			}
 		}
 	}
 }
