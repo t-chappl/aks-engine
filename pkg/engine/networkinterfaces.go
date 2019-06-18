@@ -331,7 +331,8 @@ func createAgentVMASNetworkInterface(cs *api.ContainerService, profile *api.Agen
 				ipConfig.LoadBalancerBackendAddressPools = &backendPools
 			}
 		}
-		ipConfig.PrivateIPAllocationMethod = network.Dynamic
+		ipConfig.PrivateIPAllocationMethod = network.Static
+		ipConfig.PrivateIPAddress = to.StringPtr(fmt.Sprintf("10.240.2.%d", i))
 		ipConfig.Subnet = &network.Subnet{
 			ID: to.StringPtr(fmt.Sprintf("[variables('%sVnetSubnetID')]", profile.Name)),
 		}
@@ -366,7 +367,8 @@ func getSecondaryNICIPConfigs(n int) []network.InterfaceIPConfiguration {
 			Name: to.StringPtr(fmt.Sprintf("ipconfig%d", i)),
 			InterfaceIPConfigurationPropertiesFormat: &network.InterfaceIPConfigurationPropertiesFormat{
 				Primary:                   to.BoolPtr(false),
-				PrivateIPAllocationMethod: network.Dynamic,
+				PrivateIPAllocationMethod: network.Static,
+				PrivateIPAddress: to.StringPtr(fmt.Sprintf("10.240.1.%d", i)),
 				Subnet: &network.Subnet{
 					ID: to.StringPtr("[variables('vnetSubnetID')]"),
 				},

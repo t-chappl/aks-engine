@@ -209,6 +209,87 @@ configureK8s() {
     "providerKeyVersion": ""
 }
 EOF
+
+    if [[ -n "${MASTER_NODE}" ]]; then
+        cat << EOF > "/etc/kubernetes/ipconfig.json"
+{
+  "Prefix": "10.240.0.0/12",
+  "IPs": [
+    {"IP": "10.255.255.5","IsPrimary": true},
+    {"IP": "10.240.1.2","IsPrimary": false},
+    {"IP": "10.240.1.3","IsPrimary": false},
+    {"IP": "10.240.1.4","IsPrimary": false},
+    {"IP": "10.240.1.5","IsPrimary": false},
+    {"IP": "10.240.1.6","IsPrimary": false},
+    {"IP": "10.240.1.7","IsPrimary": false},
+    {"IP": "10.240.1.8","IsPrimary": false},
+    {"IP": "10.240.1.9","IsPrimary": false},
+    {"IP": "10.240.1.10","IsPrimary": false},
+    {"IP": "10.240.1.11","IsPrimary": false},
+    {"IP": "10.240.1.12","IsPrimary": false},
+    {"IP": "10.240.1.13","IsPrimary": false},
+    {"IP": "10.240.1.14","IsPrimary": false},
+    {"IP": "10.240.1.15","IsPrimary": false},
+    {"IP": "10.240.1.16","IsPrimary": false},
+    {"IP": "10.240.1.17","IsPrimary": false},
+    {"IP": "10.240.1.18","IsPrimary": false},
+    {"IP": "10.240.1.19","IsPrimary": false},
+    {"IP": "10.240.1.20","IsPrimary": false},
+    {"IP": "10.240.1.21","IsPrimary": false},
+    {"IP": "10.240.1.22","IsPrimary": false},
+    {"IP": "10.240.1.23","IsPrimary": false},
+    {"IP": "10.240.1.24","IsPrimary": false},
+    {"IP": "10.240.1.25","IsPrimary": false},
+    {"IP": "10.240.1.26","IsPrimary": false},
+    {"IP": "10.240.1.27","IsPrimary": false},
+    {"IP": "10.240.1.28","IsPrimary": false},
+    {"IP": "10.240.1.29","IsPrimary": false},
+    {"IP": "10.240.1.30","IsPrimary": false},
+    {"IP": "10.240.1.31","IsPrimary": false}
+  ]
+}
+EOF
+    else
+        cat << EOF > "/etc/kubernetes/ipconfig.json"
+{
+  "Prefix": "10.240.0.0/12",
+  "IPs": [
+    {"IP": "10.240.2.1","IsPrimary": true},
+    {"IP": "10.240.2.2","IsPrimary": false},
+    {"IP": "10.240.2.3","IsPrimary": false},
+    {"IP": "10.240.2.4","IsPrimary": false},
+    {"IP": "10.240.2.5","IsPrimary": false},
+    {"IP": "10.240.2.6","IsPrimary": false},
+    {"IP": "10.240.2.7","IsPrimary": false},
+    {"IP": "10.240.2.8","IsPrimary": false},
+    {"IP": "10.240.2.9","IsPrimary": false},
+    {"IP": "10.240.2.10","IsPrimary": false},
+    {"IP": "10.240.2.11","IsPrimary": false},
+    {"IP": "10.240.2.12","IsPrimary": false},
+    {"IP": "10.240.2.13","IsPrimary": false},
+    {"IP": "10.240.2.14","IsPrimary": false},
+    {"IP": "10.240.2.15","IsPrimary": false},
+    {"IP": "10.240.2.16","IsPrimary": false},
+    {"IP": "10.240.2.17","IsPrimary": false},
+    {"IP": "10.240.2.18","IsPrimary": false},
+    {"IP": "10.240.2.19","IsPrimary": false},
+    {"IP": "10.240.2.20","IsPrimary": false},
+    {"IP": "10.240.2.21","IsPrimary": false},
+    {"IP": "10.240.2.22","IsPrimary": false},
+    {"IP": "10.240.2.23","IsPrimary": false},
+    {"IP": "10.240.2.24","IsPrimary": false},
+    {"IP": "10.240.2.25","IsPrimary": false},
+    {"IP": "10.240.2.26","IsPrimary": false},
+    {"IP": "10.240.2.27","IsPrimary": false},
+    {"IP": "10.240.2.28","IsPrimary": false},
+    {"IP": "10.240.2.29","IsPrimary": false},
+    {"IP": "10.240.2.30","IsPrimary": false},
+    {"IP": "10.240.2.31","IsPrimary": false}
+  ]
+}
+EOF
+    fi
+
     set -x
     if [[ -n "${MASTER_NODE}" ]]; then
         if [[ "${ENABLE_AGGREGATED_APIS}" = True ]]; then

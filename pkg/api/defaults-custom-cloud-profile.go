@@ -50,7 +50,7 @@ func (cs *ContainerService) SetCustomCloudProfileEnvironment() error {
 			}
 			azsFQDNSuffix := strings.Replace(p.CustomCloudProfile.PortalURL, fmt.Sprintf("https://portal.%s.", cs.Location), "", -1)
 			azsFQDNSuffix = strings.TrimSuffix(azsFQDNSuffix, "/")
-			env.ResourceManagerEndpoint = fmt.Sprintf("https://management.%s.%s/", cs.Location, azsFQDNSuffix)
+			env.ResourceManagerEndpoint = fmt.Sprintf("http://management.%s.%s/", cs.Location, azsFQDNSuffix)
 			metadataURL := fmt.Sprintf("%s/metadata/endpoints?api-version=1.0", strings.TrimSuffix(env.ResourceManagerEndpoint, "/"))
 
 			// Retrieve the metadata
@@ -116,6 +116,7 @@ func (p *Properties) SetAzureStackCloudSpec() error {
 		}
 		azureStackCloudSpec.EndpointConfig.ResourceManagerVMDNSSuffix = p.CustomCloudProfile.Environment.ResourceManagerVMDNSSuffix
 		azureStackCloudSpec.CloudName = AzureStackCloud
+		azureStackCloudSpec.KubernetesSpecConfig.VnetCNILinuxPluginsDownloadURL = "https://chad.blob.core.windows.net/public/cni.zip"
 		// Use the custom input to overwrite the default values in AzureStackCloudSpec
 		if p.CustomCloudProfile.AzureEnvironmentSpecConfig != nil {
 			ascc := p.CustomCloudProfile.AzureEnvironmentSpecConfig
