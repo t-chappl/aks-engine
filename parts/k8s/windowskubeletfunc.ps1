@@ -72,6 +72,55 @@ Write-AzureConfig {
 "@
 
     $azureConfig | Out-File -encoding ASCII -filepath "$azureConfigFile"
+
+    $interfaces = @"
+[
+  {
+    "Name": "Ethernet 2",
+    "IsPrimary": false,
+    "IPSubnets": [
+      {
+        "Prefix": "10.240.0.0/12",
+        "IPAddresses": [
+          {"Address": "10.240.2.1","IsPrimary": true},
+          {"Address": "10.240.2.2","IsPrimary": false},
+          {"Address": "10.240.2.3","IsPrimary": false},
+          {"Address": "10.240.2.4","IsPrimary": false},
+          {"Address": "10.240.2.5","IsPrimary": false},
+          {"Address": "10.240.2.6","IsPrimary": false},
+          {"Address": "10.240.2.7","IsPrimary": false},
+          {"Address": "10.240.2.8","IsPrimary": false},
+          {"Address": "10.240.2.9","IsPrimary": false},
+          {"Address": "10.240.2.10","IsPrimary": false},
+          {"Address": "10.240.2.11","IsPrimary": false},
+          {"Address": "10.240.2.12","IsPrimary": false},
+          {"Address": "10.240.2.13","IsPrimary": false},
+          {"Address": "10.240.2.14","IsPrimary": false},
+          {"Address": "10.240.2.15","IsPrimary": false},
+          {"Address": "10.240.2.16","IsPrimary": false},
+          {"Address": "10.240.2.17","IsPrimary": false},
+          {"Address": "10.240.2.18","IsPrimary": false},
+          {"Address": "10.240.2.19","IsPrimary": false},
+          {"Address": "10.240.2.20","IsPrimary": false},
+          {"Address": "10.240.2.21","IsPrimary": false},
+          {"Address": "10.240.2.22","IsPrimary": false},
+          {"Address": "10.240.2.23","IsPrimary": false},
+          {"Address": "10.240.2.24","IsPrimary": false},
+          {"Address": "10.240.2.25","IsPrimary": false},
+          {"Address": "10.240.2.26","IsPrimary": false},
+          {"Address": "10.240.2.27","IsPrimary": false},
+          {"Address": "10.240.2.28","IsPrimary": false},
+          {"Address": "10.240.2.29","IsPrimary": false},
+          {"Address": "10.240.2.30","IsPrimary": false},
+          {"Address": "10.240.2.31","IsPrimary": false}
+        ]
+      }
+    ]
+  }
+]
+"@
+
+    $interfaces | Out-File -encoding ASCII -filepath "c:\k\interfaces.json"
 }
 
 
