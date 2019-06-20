@@ -50,7 +50,7 @@ func (cs *ContainerService) SetCustomCloudProfileEnvironment() error {
 			}
 			azsFQDNSuffix := strings.Replace(p.CustomCloudProfile.PortalURL, fmt.Sprintf("https://portal.%s.", cs.Location), "", -1)
 			azsFQDNSuffix = strings.TrimSuffix(azsFQDNSuffix, "/")
-			env.ResourceManagerEndpoint = fmt.Sprintf("http://management.%s.%s/", cs.Location, azsFQDNSuffix)
+			env.ResourceManagerEndpoint = fmt.Sprintf("https://management.%s.%s/", cs.Location, azsFQDNSuffix)
 			metadataURL := fmt.Sprintf("%s/metadata/endpoints?api-version=1.0", strings.TrimSuffix(env.ResourceManagerEndpoint, "/"))
 
 			// Retrieve the metadata
