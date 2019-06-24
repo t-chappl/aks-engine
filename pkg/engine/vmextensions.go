@@ -72,6 +72,12 @@ func CreateCustomScriptExtension(cs *api.ContainerService) VirtualMachineExtensi
 		}
 		outBoundCmd = `ERR_OUTBOUND_CONN_FAIL=50; retrycmd_if_failure 50 1 3 ` + ncBinary + ` -vz ` + registry + ` || exit $ERR_OUTBOUND_CONN_FAIL;`
 	}
+
+	var azureStackCNIParams string
+	if cs.Properties.IsAzureStackCloud() {
+		azureStackCNIParams = "' NETOWRK_INTERFACE=',concat(variables('masterVMNamePrefix'), 'nic-', copyIndex(variables('masterOffset'))),' SUBNET_CIDR=',variables('vnetSubnetID')"
+	}
+
 	vmExtension := compute.VirtualMachineExtension{
 		Location: to.StringPtr(location),
 		Name:     to.StringPtr(name),
@@ -82,7 +88,7 @@ func CreateCustomScriptExtension(cs *api.ContainerService) VirtualMachineExtensi
 			AutoUpgradeMinorVersion: to.BoolPtr(true),
 			Settings:                &map[string]interface{}{},
 			ProtectedSettings: &map[string]interface{}{
-				"commandToExecute": fmt.Sprintf("[concat('retrycmd_if_failure() { r=$1; w=$2; t=$3; shift && shift && shift; for i in $(seq 1 $r); do timeout $t ${@}; [ $? -eq 0  ] && break || if [ $i -eq $r ]; then return 1; else sleep $w; fi; done }; "+outBoundCmd+" for i in $(seq 1 1200); do if [ -f /opt/azure/containers/provision.sh ]; then break; fi; if [ $i -eq 1200 ]; then exit 100; else sleep 1; fi; done; ', variables('provisionScriptParametersCommon'),%s,variables('provisionScriptParametersMaster'), ' /usr/bin/nohup /bin/bash -c \"/bin/bash /opt/azure/containers/provision.sh >> /var/log/azure/cluster-provision.log 2>&1\"')]", generateUserAssignedIdentityClientIDParameter(userAssignedIDEnabled)),
+				"commandToExecute": fmt.Sprintf("[concat('retrycmd_if_failure() { r=$1; w=$2; t=$3; shift && shift && shift; for i in $(seq 1 $r); do timeout $t ${@}; [ $? -eq 0  ] && break || if [ $i -eq $r ]; then return 1; else sleep $w; fi; done }; "+outBoundCmd+" for i in $(seq 1 1200); do if [ -f /opt/azure/containers/provision.sh ]; then break; fi; if [ $i -eq 1200 ]; then exit 100; else sleep 1; fi; done; ', variables('provisionScriptParametersCommon'),%s,%s,variables('provisionScriptParametersMaster'), ' /usr/bin/nohup /bin/bash -c \"/bin/bash /opt/azure/containers/provision.sh >> /var/log/azure/cluster-provision.log 2>&1\"')]", generateUserAssignedIdentityClientIDParameter(userAssignedIDEnabled), azureStackCNIParams),
 			},
 		},
 		Type: to.StringPtr("Microsoft.Compute/virtualMachines/extensions"),
@@ -147,6 +153,11 @@ func createAgentVMASCustomScriptExtension(cs *api.ContainerService, profile *api
 		Type: to.StringPtr("Microsoft.Compute/virtualMachines/extensions"),
 	}
 
+	var azureStackCNIParams string
+	if cs.Properties.IsAzureStackCloud() {
+		azureStackCNIParams = fmt.Sprintf("' NETOWRK_INTERFACE=',concat(variables('%[1]sVMNamePrefix'), 'nic-', copyIndex(variables('%[1]sOffset'))),' SUBNET_CIDR=',variables('%[1]sVnetSubnetID')", profile.Name)
+	}
+
 	if profile.IsWindows() {
 		vmExtension.Publisher = to.StringPtr("Microsoft.Compute")
 		vmExtension.VirtualMachineExtensionProperties.Type = to.StringPtr("CustomScriptExtension")
@@ -158,7 +169,7 @@ func createAgentVMASCustomScriptExtension(cs *api.ContainerService, profile *api
 		vmExtension.Publisher = to.StringPtr("Microsoft.Azure.Extensions")
 		vmExtension.VirtualMachineExtensionProperties.Type = to.StringPtr("CustomScript")
 		vmExtension.TypeHandlerVersion = to.StringPtr("2.0")
-		commandExec := fmt.Sprintf("[concat('retrycmd_if_failure() { r=$1; w=$2; t=$3; shift && shift && shift; for i in $(seq 1 $r); do timeout $t ${@}; [ $? -eq 0  ] && break || if [ $i -eq $r ]; then return 1; else sleep $w; fi; done }; %s for i in $(seq 1 1200); do if [ -f /opt/azure/containers/provision.sh ]; then break; fi; if [ $i -eq 1200 ]; then exit 100; else sleep 1; fi; done; ', variables('provisionScriptParametersCommon'),%s,' GPU_NODE=%s SGX_NODE=%s AUDITD_ENABLED=%s /usr/bin/nohup /bin/bash -c \"/bin/bash /opt/azure/containers/provision.sh >> /var/log/azure/cluster-provision.log 2>&1%s\"')]", outBoundCmd, generateUserAssignedIdentityClientIDParameter(userAssignedIDEnabled), nVidiaEnabled, sgxEnabled, auditDEnabled, runInBackground)
+		commandExec := fmt.Sprintf("[concat('retrycmd_if_failure() { r=$1; w=$2; t=$3; shift && shift && shift; for i in $(seq 1 $r); do timeout $t ${@}; [ $? -eq 0  ] && break || if [ $i -eq $r ]; then return 1; else sleep $w; fi; done }; %s for i in $(seq 1 1200); do if [ -f /opt/azure/containers/provision.sh ]; then break; fi; if [ $i -eq 1200 ]; then exit 100; else sleep 1; fi; done; ', variables('provisionScriptParametersCommon'),%s,%s,' GPU_NODE=%s SGX_NODE=%s AUDITD_ENABLED=%s /usr/bin/nohup /bin/bash -c \"/bin/bash /opt/azure/containers/provision.sh >> /var/log/azure/cluster-provision.log 2>&1%s\"')]", outBoundCmd, generateUserAssignedIdentityClientIDParameter(userAssignedIDEnabled), azureStackCNIParams, nVidiaEnabled, sgxEnabled, auditDEnabled, runInBackground)
 		vmExtension.ProtectedSettings = &map[string]interface{}{
 			"commandToExecute": commandExec,
 		}

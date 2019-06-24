@@ -79,3 +79,65 @@ configureK8sCustomCloud() {
 
     set -x
 }
+
+configureAzureStackInterfaces() {
+    NETWORK_INTERFACES_FILE="/etc/kubernetes/network_interfaces.json"
+    AZURE_CNI_INTERFACE_FILE="/etc/kubernetes/interfaces.json"
+
+    echo "Generating token for Azure Resource Manager"
+    echo "------------------------------------------------------------------------"
+    echo "Parameters"
+    echo "------------------------------------------------------------------------"
+    echo "SERVICE_PRINCIPAL_CLIENT_ID:     ..."
+    echo "SERVICE_PRINCIPAL_CLIENT_SECRET: ..."
+    echo "SERVICE_MANAGEMENT_ENDPOINT:     $SERVICE_MANAGEMENT_ENDPOINT"
+    echo "ACTIVE_DIRECTORY_ENDPOINT:       $ACTIVE_DIRECTORY_ENDPOINT"
+    echo "TENANT_ID:                       $TENANT_ID"
+    echo "------------------------------------------------------------------------"
+
+    TOKEN=`curl -s --retry 5 --retry-delay 10 --max-time 60 -f -X POST \
+        -H "Content-Type: application/x-www-form-urlencoded" \
+        -d "grant_type=client_credentials" \
+        -d "client_id=$SERVICE_PRINCIPAL_CLIENT_ID" \
+        --data-urlencode "client_secret=$SERVICE_PRINCIPAL_CLIENT_SECRET" \
+        --data-urlencode "resource=$SERVICE_MANAGEMENT_ENDPOINT" \
+        "$ACTIVE_DIRECTORY_ENDPOINT$TENANT_ID/oauth2/token" | \
+        jq '.access_token' | xargs`
+
+    if [[ -z "$TOKEN" ]]; then
+        echo "Error generating token for Azure Resource Manager"
+        exit $ERR_AZURE_STACK_GET_ARM_TOKEN
+    fi
+
+    echo "Fetching network interface configuration for node"
+    echo "------------------------------------------------------------------------"
+    echo "Parameters"
+    echo "------------------------------------------------------------------------"
+    echo "RESOURCE_MANAGER_ENDPOINT: $RESOURCE_MANAGER_ENDPOINT"
+    echo "SUBSCRIPTION_ID:           $SUBSCRIPTION_ID"
+    echo "RESOURCE_GROUP:            $RESOURCE_GROUP"
+    echo "NETWORK_INTERFACE:         $NETWORK_INTERFACE"
+    echo "NETWORK_API_VERSION:       $NETWORK_API_VERSION"
+    echo "NETWORK_INTERFACES_FILE:   $NETWORK_INTERFACES_FILE"
+    echo "------------------------------------------------------------------------"
+
+    curl -s --retry 5 --retry-delay 10 --max-time 60 -f -X GET \
+        -H "Authorization: Bearer $TOKEN" \
+        -H "Content-Type: application/json" \
+        "${RESOURCE_MANAGER_ENDPOINT}subscriptions/$SUBSCRIPTION_ID/resourceGroups/$RESOURCE_GROUP/providers/Microsoft.Network/networkInterfaces/$NETWORK_INTERFACE?api-version=$NETWORK_API_VERSION" > $NETWORK_INTERFACES_FILE
+
+    if [[ ! -s $NETWORK_INTERFACES_FILE ]]; then
+        echo "Error fetching network interface configuration for node"
+        exit $ERR_AZURE_STACK_GET_NETWORK_CONFIGURATION
+    fi
+
+    echo "Generating Azure CNI interface file"
+    echo "------------------------------------------------------------------------"
+    echo "Parameters"
+    echo "------------------------------------------------------------------------"
+    echo "SUBNET_CIDR:              $SUBNET_CIDR"
+    echo "AZURE_CNI_INTERFACE_FILE: $AZURE_CNI_INTERFACE_FILE"
+    echo "------------------------------------------------------------------------"
+
+    cat $NETWORK_INTERFACES_FILE | jq "[{MacAddress: .properties.macAddress, IsPrimary: .properties.primary, IPSubnets: [{Prefix: \"$SUBNET_CIDR\", IPAddresses: .properties.ipConfigurations | [.[] | {Address: .properties.privateIPAddress, IsPrimary: .properties.primary}]}]}]" > $AZURE_CNI_INTERFACE_FILE
+}
