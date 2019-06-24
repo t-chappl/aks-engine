@@ -75,7 +75,7 @@ func CreateCustomScriptExtension(cs *api.ContainerService) VirtualMachineExtensi
 
 	var azureStackCNIParams string
 	if cs.Properties.IsAzureStackCloud() {
-		azureStackCNIParams = "' NETOWRK_INTERFACE=',concat(variables('masterVMNamePrefix'), 'nic-', copyIndex(variables('masterOffset'))),' SUBNET_CIDR=',variables('vnetSubnetID')"
+		azureStackCNIParams = "' NETWORK_INTERFACE=',concat(variables('masterVMNamePrefix'), 'nic-', copyIndex(variables('masterOffset'))),' SUBNET_CIDR=',variables('vnetSubnetID')"
 	}
 
 	vmExtension := compute.VirtualMachineExtension{
@@ -155,7 +155,7 @@ func createAgentVMASCustomScriptExtension(cs *api.ContainerService, profile *api
 
 	var azureStackCNIParams string
 	if cs.Properties.IsAzureStackCloud() {
-		azureStackCNIParams = fmt.Sprintf("' NETOWRK_INTERFACE=',concat(variables('%[1]sVMNamePrefix'), 'nic-', copyIndex(variables('%[1]sOffset'))),' SUBNET_CIDR=',variables('%[1]sVnetSubnetID')", profile.Name)
+		azureStackCNIParams = fmt.Sprintf("' NETWORK_INTERFACE=',concat(variables('%[1]sVMNamePrefix'), 'nic-', copyIndex(variables('%[1]sOffset'))),' SUBNET_CIDR=',variables('%[1]sVnetSubnetID')", profile.Name)
 	}
 
 	if profile.IsWindows() {
