@@ -75,7 +75,7 @@ func CreateCustomScriptExtension(cs *api.ContainerService) VirtualMachineExtensi
 
 	var azureStackCNIParams string
 	if cs.Properties.IsAzureStackCloud() {
-		azureStackCNIParams = "' NETWORK_INTERFACE=',concat(variables('masterVMNamePrefix'), 'nic-', copyIndex(variables('masterOffset'))),' SUBNET_CIDR=',parameters('masterSubnet')"
+		azureStackCNIParams = "' NETWORK_INTERFACE=',concat(variables('masterVMNamePrefix'), 'nic-', copyIndex(variables('masterOffset'))),' SUBNET_CIDR=',parameters('masterSubnet'), ' '"
 	}
 
 	vmExtension := compute.VirtualMachineExtension{
