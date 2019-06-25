@@ -10853,8 +10853,16 @@ configureK8sCustomCloud() {
 }
 
 configureAzureStackInterfaces() {
+    set +x
+
     NETWORK_INTERFACES_FILE="/etc/kubernetes/network_interfaces.json"
     AZURE_CNI_INTERFACE_FILE="/etc/kubernetes/interfaces.json"
+
+    if [[ "${IDENTITY_SYSTEM,,}" == "adfs"  ]]; then
+        TOKEN_URL="${ACTIVE_DIRECTORY_ENDPOINT}adfs/oauth2/token"
+    else
+        TOKEN_URL="${ACTIVE_DIRECTORY_ENDPOINT}${TENANT_ID}/oauth2/token"
+    fi
 
     echo "Generating token for Azure Resource Manager"
     echo "------------------------------------------------------------------------"
@@ -10865,6 +10873,8 @@ configureAzureStackInterfaces() {
     echo "SERVICE_MANAGEMENT_ENDPOINT:     $SERVICE_MANAGEMENT_ENDPOINT"
     echo "ACTIVE_DIRECTORY_ENDPOINT:       $ACTIVE_DIRECTORY_ENDPOINT"
     echo "TENANT_ID:                       $TENANT_ID"
+    echo "IDENTITY_SYSTEM:                 $IDENTITY_SYSTEM"
+    echo "TOKEN_URL:                       $TOKEN_URL"
     echo "------------------------------------------------------------------------"
 
     TOKEN=` + "`" + `curl -s --retry 5 --retry-delay 10 --max-time 60 -f -X POST \
@@ -10873,8 +10883,7 @@ configureAzureStackInterfaces() {
         -d "client_id=$SERVICE_PRINCIPAL_CLIENT_ID" \
         --data-urlencode "client_secret=$SERVICE_PRINCIPAL_CLIENT_SECRET" \
         --data-urlencode "resource=$SERVICE_MANAGEMENT_ENDPOINT" \
-        "$ACTIVE_DIRECTORY_ENDPOINT$TENANT_ID/oauth2/token" | \
-        jq '.access_token' | xargs` + "`" + `
+        $TOKEN_URL | jq '.access_token' | xargs` + "`" + `
 
     if [[ -z "$TOKEN" ]]; then
         echo "Error generating token for Azure Resource Manager"
@@ -10912,6 +10921,8 @@ configureAzureStackInterfaces() {
     echo "------------------------------------------------------------------------"
 
     cat $NETWORK_INTERFACES_FILE | jq "[{MacAddress: .properties.macAddress, IsPrimary: .properties.primary, IPSubnets: [{Prefix: \"$SUBNET_CIDR\", IPAddresses: .properties.ipConfigurations | [.[] | {Address: .properties.privateIPAddress, IsPrimary: .properties.primary}]}]}]" > $AZURE_CNI_INTERFACE_FILE
+
+    set -x
 }`)
 
 func k8sCloudInitArtifactsCse_customcloudShBytes() ([]byte, error) {
