@@ -18522,7 +18522,7 @@ try
                 -SubscriptionId $global:SubscriptionId ` + "`" + `
                 -ResourceGroup $global:ResourceGroup ` + "`" + `
                 -AADClientId $AADClientId ` + "`" + `
-                -AADClientSecret $AADClientSecret ` + "`" + `
+                -AADClientSecret $([System.Text.Encoding]::ASCII.GetString([System.Convert]::FromBase64String($AADClientSecret))) ` + "`" + `
                 -NetworkInterface $NetworkInterface ` + "`" + `
                 -NetworkAPIVersion $NetworkAPIVersion ` + "`" + `
                 -SubnetPrefix $SubnetPrefix ` + "`" + `
