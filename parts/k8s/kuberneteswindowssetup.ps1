@@ -42,7 +42,7 @@ param(
     [ValidateNotNullOrEmpty()]
     $AADClientSecret, # base64
 
-    {{if IsAzureStackCloud}}{{If IsAzureCNI}}
+    {{if IsAzureStackCloud}}{{if IsAzureCNI}}
     [parameter(Mandatory=$true)]
     [ValidateNotNullOrEmpty()]
     $NetworkInterface,
@@ -253,7 +253,7 @@ try
                                -KubeServiceCIDR $global:KubeServiceCIDR `
                                -VNetCIDR $global:VNetCIDR
 
-            {{if IsAzureStackCloud}}{{If IsAzureCNI}}
+            {{if IsAzureStackCloud}}{{if IsAzureCNI}}
             GenerateAzureStackCNIConfig `
                 -TenantId $global:TenantId `
                 -SubscriptionId $global:SubscriptionId `
