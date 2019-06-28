@@ -654,7 +654,7 @@ func (t *TemplateGenerator) getTemplateFuncMap(cs *api.ContainerService) templat
 		},
 		"GetResourceManagerEndpoint": func() string {
 			if cs.Properties.IsAzureStackCloud() {
-				return cs.Properties.CustomCloudProfile.Environment.ServiceManagementEndpoint
+				return cs.Properties.CustomCloudProfile.Environment.ResourceManagerEndpoint
 			} else {
 				return ""
 			}

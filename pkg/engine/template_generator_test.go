@@ -98,7 +98,10 @@ func TestGetTemplateFuncMap(t *testing.T) {
 		"IsNSeriesSKU",
 		"HasAvailabilityZones",
 		"GetBase64EncodedEnvironmentJSON",
-		"IsIdentitySystemADFS",
+		"GetIdentitySystem",
+		"GetServiceManagementEndpoint",
+		"GetActiveDirectoryEndpoint",
+		"GetResourceManagerEndpoint",
 		// TODO validate that the remaining func strings in getTemplateFuncMap are thinly wrapped and unit tested
 	}
 
@@ -131,21 +134,21 @@ func TestGetTemplateFuncMap(t *testing.T) {
 	}
 }
 
-func TestIsIdentitySystemADFS(t *testing.T) {
+func TestGetIdentitySystem(t *testing.T) {
 	for _, test := range []struct {
 		desc     string
 		apiModel string
-		isADFS   bool
+		correctResult   string
 	}{
 		{
-			desc:     "identitySystem=adfs should return true",
+			desc:     "should return adfs when identitySystem is set",
 			apiModel: `{"properties":{"customCloudProfile": {"identitySystem": "adfs"}}}`,
-			isADFS:   true,
+			correctResult:   "adfs",
 		},
 		{
-			desc:     "identitySystem=azure_ad should return false",
-			apiModel: `{"properties":{"customCloudProfile": {"identitySystem": "azure_ad"}}}`,
-			isADFS:   false,
+			desc:     "should return azure_ad when not azure stack",
+			apiModel: getAPIModelString(),
+			correctResult:   "azure_ad",
 		},
 	} {
 		t.Run(test.desc, func(t *testing.T) {
@@ -154,9 +157,9 @@ func TestIsIdentitySystemADFS(t *testing.T) {
 				t.Fatalf("Error generating function map: %v", err)
 			}
 
-			v := reflect.ValueOf(funcmap["IsIdentitySystemADFS"])
+			v := reflect.ValueOf(funcmap["GetIdentitySystem"])
 			ret := v.Call(make([]reflect.Value, 0))
-			if ret[0].Interface() != test.isADFS {
+			if ret[0].Interface() != test.correctResult {
 				t.Fatalf("IsIdentitySystemADFS returned incorrect value")
 			}
 		})
@@ -176,6 +179,67 @@ func TestGetBase64EncodedEnvironmentJSON(t *testing.T) {
 
 	if encodedEnvironmentJSON != correctlyEncodedString {
 		t.Fatalf("Function GetEnvironmentJSON() failed to produce correct environment: expected: %s, actual: %s", correctlyEncodedString, encodedEnvironmentJSON)
+	}
+}
+
+func TestGetAzureStackEndpoints(t *testing.T) {
+	masApiModel := `{"properties":{"customCloudProfile":{"environment":{"serviceManagementEndpoint":"a","resourceManagerEndpoint":"b","activeDirectoryEndpoint":"c"}}}}`
+
+	for _, test := range []struct {
+		desc string
+		apiModelString string
+		method string
+		correctResult string
+	}{
+		{
+			desc: `GetServiceManagementEndpoint should return "" when not azure stack`,
+			apiModelString: getAPIModelString(),
+			method: "GetServiceManagementEndpoint",
+			correctResult: "",
+		},
+		{
+			desc: `GetServiceManagementEndpoint should return "a" when not azure stack`,
+			apiModelString: masApiModel,
+			method: "GetServiceManagementEndpoint",
+			correctResult: "a",
+		},
+		{
+			desc: `GetResourceManagerEndpoint should return "" when not azure stack`,
+			apiModelString: getAPIModelString(),
+			method: "GetResourceManagerEndpoint",
+			correctResult: "",
+		},
+		{
+			desc: `GetResourceManagerEndpoint should return "b" when not azure stack`,
+			apiModelString: masApiModel,
+			method: "GetResourceManagerEndpoint",
+			correctResult: "b",
+		},
+		{
+			desc: `GetActiveDirectoryEndpoint should return "" when not azure stack`,
+			apiModelString: getAPIModelString(),
+			method: "GetActiveDirectoryEndpoint",
+			correctResult: "",
+		},
+		{
+			desc: `GetActiveDirectoryEndpoint should return "c" when not azure stack`,
+			apiModelString: masApiModel,
+			method: "GetActiveDirectoryEndpoint",
+			correctResult: "c",
+		},
+	} {
+		t.Run(test.desc, func(t *testing.T) {
+			funcmap, err := getFuncMap(test.apiModelString)
+			if err != nil {
+				t.Fatalf("Error generating function map: %v", err)
+			}
+
+			v := reflect.ValueOf(funcmap[test.method])
+			ret := v.Call(make([]reflect.Value, 0))
+			if ret[0].Interface() != test.correctResult {
+				t.Fatalf("%s returned incorrect value, expected: %s, actual: %s", test.method, test.correctResult, ret[0])
+			}
+		})
 	}
 }
 
