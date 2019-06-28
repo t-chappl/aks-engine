@@ -74,7 +74,7 @@ func CreateCustomScriptExtension(cs *api.ContainerService) VirtualMachineExtensi
 	}
 
 	var azureStackCNIParams string
-	if cs.Properties.IsAzureStackCloud() {
+	if cs.Properties.IsAzureStackCloud() && cs.Properties.OrchestratorProfile.IsAzureCNI() {
 		azureStackCNIParams = "' NETWORK_INTERFACE=',concat(variables('masterVMNamePrefix'), 'nic-', copyIndex(variables('masterOffset'))),' SUBNET_CIDR=',parameters('masterSubnet'),' '"
 	}
 
@@ -154,12 +154,8 @@ func createAgentVMASCustomScriptExtension(cs *api.ContainerService, profile *api
 	}
 
 	var azureStackCNIParams string
-	if cs.Properties.IsAzureStackCloud() {
-		azureStackCNIParams = fmt.Sprintf("' NETWORK_INTERFACE=',concat(variables('%[1]sVMNamePrefix'), 'nic-', copyIndex(variables('%[1]sOffset'))),' SUBNET_CIDR=',parameters('%[1]sSubnet')", profile.Name)
-	}
 
 	if profile.IsWindows() {
-		azureStackCNIWindowsParams := ""
 		if cs.Properties.IsAzureStackCloud() && cs.Properties.OrchestratorProfile.IsAzureCNI() {
 			azureStackCNIParams = fmt.Sprintf("' -NetworkInterface ',concat(variables('%[1]sVMNamePrefix'), 'nic-', copyIndex(variables('%[1]sOffset'))),' -SubnetPrefix ',parameters('%[1]sSubnet'),' -NetworkAPIVersion ',variables('apiVersionNetwork')", profile.Name)
 		}
@@ -168,9 +164,13 @@ func createAgentVMASCustomScriptExtension(cs *api.ContainerService, profile *api
 		vmExtension.VirtualMachineExtensionProperties.Type = to.StringPtr("CustomScriptExtension")
 		vmExtension.TypeHandlerVersion = to.StringPtr("1.8")
 		vmExtension.ProtectedSettings = &map[string]interface{}{
-			"commandToExecute": fmt.Sprintf("[concat('powershell.exe -ExecutionPolicy Unrestricted -command \"', '$arguments = ', variables('singleQuote'),'-MasterIP ',variables('kubernetesAPIServerIP'),' -KubeDnsServiceIp ',parameters('kubeDnsServiceIp'),' -MasterFQDNPrefix ',variables('masterFqdnPrefix'),' -Location ',variables('location'),' -TargetEnvironment ',parameters('targetEnvironment'),' -AgentKey ',parameters('clientPrivateKey'),' -AADClientId ',variables('servicePrincipalClientId'),' -AADClientSecret ',variables('singleQuote'),variables('singleQuote'),base64(variables('servicePrincipalClientSecret')),variables('singleQuote'),variables('singleQuote'),%s ' ',variables('singleQuote'), ' ; ', variables('windowsCustomScriptSuffix'), '\" > %SYSTEMDRIVE%\\AzureData\\CustomDataSetupScript.log 2>&1')]", azureStackCNIWindowsParams),
+			"commandToExecute": fmt.Sprintf("[concat('powershell.exe -ExecutionPolicy Unrestricted -command \"', '$arguments = ', variables('singleQuote'),'-MasterIP ',variables('kubernetesAPIServerIP'),' -KubeDnsServiceIp ',parameters('kubeDnsServiceIp'),' -MasterFQDNPrefix ',variables('masterFqdnPrefix'),' -Location ',variables('location'),' -TargetEnvironment ',parameters('targetEnvironment'),' -AgentKey ',parameters('clientPrivateKey'),' -AADClientId ',variables('servicePrincipalClientId'),' -AADClientSecret ',variables('singleQuote'),variables('singleQuote'),base64(variables('servicePrincipalClientSecret')),variables('singleQuote'),variables('singleQuote'),%s ' ',variables('singleQuote'), ' ; ', variables('windowsCustomScriptSuffix'), '\" > %SYSTEMDRIVE%\\AzureData\\CustomDataSetupScript.log 2>&1')]", azureStackCNIParams),
 		}
 	} else {
+		if cs.Properties.IsAzureStackCloud() && cs.Properties.OrchestratorProfile.IsAzureCNI() {
+			azureStackCNIParams = fmt.Sprintf("' NETWORK_INTERFACE=',concat(variables('%[1]sVMNamePrefix'), 'nic-', copyIndex(variables('%[1]sOffset'))),' SUBNET_CIDR=',parameters('%[1]sSubnet')", profile.Name)
+		}
+
 		vmExtension.Publisher = to.StringPtr("Microsoft.Azure.Extensions")
 		vmExtension.VirtualMachineExtensionProperties.Type = to.StringPtr("CustomScript")
 		vmExtension.TypeHandlerVersion = to.StringPtr("2.0")
