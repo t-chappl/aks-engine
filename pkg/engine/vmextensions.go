@@ -159,11 +159,16 @@ func createAgentVMASCustomScriptExtension(cs *api.ContainerService, profile *api
 	}
 
 	if profile.IsWindows() {
+		azureStackCNIWindowsParams := ""
+		if cs.Properties.IsAzureStackCloud() && cs.Properties.OrchestratorProfile.IsAzureCNI() {
+			azureStackCNIParams = fmt.Sprintf("' -NetworkInterface ',concat(variables('%[1]sVMNamePrefix'), 'nic-', copyIndex(variables('%[1]sOffset'))),' -SubnetPrefix ',parameters('%[1]sSubnet'),' -NetworkAPIVersion ',variables('apiVersionNetwork')", profile.Name)
+		}
+
 		vmExtension.Publisher = to.StringPtr("Microsoft.Compute")
 		vmExtension.VirtualMachineExtensionProperties.Type = to.StringPtr("CustomScriptExtension")
 		vmExtension.TypeHandlerVersion = to.StringPtr("1.8")
 		vmExtension.ProtectedSettings = &map[string]interface{}{
-			"commandToExecute": "[concat('powershell.exe -ExecutionPolicy Unrestricted -command \"', '$arguments = ', variables('singleQuote'),'-MasterIP ',variables('kubernetesAPIServerIP'),' -KubeDnsServiceIp ',parameters('kubeDnsServiceIp'),' -MasterFQDNPrefix ',variables('masterFqdnPrefix'),' -Location ',variables('location'),' -TargetEnvironment ',parameters('targetEnvironment'),' -AgentKey ',parameters('clientPrivateKey'),' -AADClientId ',variables('servicePrincipalClientId'),' -AADClientSecret ',variables('singleQuote'),variables('singleQuote'),base64(variables('servicePrincipalClientSecret')),variables('singleQuote'),variables('singleQuote'), ' ',variables('singleQuote'), ' ; ', variables('windowsCustomScriptSuffix'), '\" > %SYSTEMDRIVE%\\AzureData\\CustomDataSetupScript.log 2>&1')]",
+			"commandToExecute": fmt.Sprintf("[concat('powershell.exe -ExecutionPolicy Unrestricted -command \"', '$arguments = ', variables('singleQuote'),'-MasterIP ',variables('kubernetesAPIServerIP'),' -KubeDnsServiceIp ',parameters('kubeDnsServiceIp'),' -MasterFQDNPrefix ',variables('masterFqdnPrefix'),' -Location ',variables('location'),' -TargetEnvironment ',parameters('targetEnvironment'),' -AgentKey ',parameters('clientPrivateKey'),' -AADClientId ',variables('servicePrincipalClientId'),' -AADClientSecret ',variables('singleQuote'),variables('singleQuote'),base64(variables('servicePrincipalClientSecret')),variables('singleQuote'),variables('singleQuote'),%s ' ',variables('singleQuote'), ' ; ', variables('windowsCustomScriptSuffix'), '\" > %SYSTEMDRIVE%\\AzureData\\CustomDataSetupScript.log 2>&1')]", azureStackCNIWindowsParams),
 		}
 	} else {
 		vmExtension.Publisher = to.StringPtr("Microsoft.Azure.Extensions")
