@@ -154,7 +154,7 @@ GenerateAzureStackCNIConfig
     $interfacesUri = "$($ResourceManagerEndpoint)subscriptions/$SubscriptionId/resourceGroups/$ResourceGroup/providers/Microsoft.Network/networkInterfaces/$($NetworkInterface)?api-version=$NetworkAPIVersion"
     $headers = @{Authorization="Bearer $token"}
 
-    Invoke-RestMethod -Uri $interfacesUri -Method Get -ContentType 'application/json' -Headers $headers -OutFile $nicConfigFile -Max
+    Invoke-RestMethod -Uri $interfacesUri -Method Get -ContentType 'application/json' -Headers $headers -OutFile $nicConfigFile
 
     Write-Log "Generating Azure CNI interface file"
 
