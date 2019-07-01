@@ -81,3 +81,96 @@ Set-AzureCNIConfig
 
     $configJson | ConvertTo-Json -depth 20 | Out-File -encoding ASCII -filepath $fileName
 }
+
+function
+GenerateAzureStackCNIConfig
+{
+    Param(
+        [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]
+        $TenantId,
+        [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]
+        $SubscriptionId,
+        [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]
+        $AADClientId,
+        [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]
+        $AADClientSecret,
+        [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]
+        $ResourceGroup,
+        [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]
+        $NetworkInterface,
+        [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]
+        $NetworkAPIVersion,
+        [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]
+        $SubnetPrefix,
+        [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]
+        $ServiceManagementEndpoint,
+        [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]
+        $ActiveDirectoryEndpoint,
+        [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]
+        $ResourceManagerEndpoint,
+        [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]
+        $IdentitySystem
+    )
+
+    $nicConfigFile = "C:\k\network-interfaces.json"
+    $azureCNIInterfaceFile = "C:\k\interfaces.json"
+
+    Write-Log "------------------------------------------------------------------------"
+    Write-Log "Parameters"
+    Write-Log "------------------------------------------------------------------------"
+    Write-Log "TenantId:                  $TenantId"
+    Write-Log "SubscriptionId:            $SubscriptionId"
+    Write-Log "AADClientId:               ..."
+    Write-Log "AADClientSecret:           ..."
+    Write-Log "ResourceGroup:             $ResourceGroup"
+    Write-Log "NetworkInterface:          $NetworkInterface"
+    Write-Log "NetworkAPIVersion:         $NetworkAPIVersion"
+    Write-Log "SubnetPrefix:              $SubnetPrefix"
+    Write-Log "ServiceManagementEndpoint: $ServiceManagementEndpoint"
+    Write-Log "ActiveDirectoryEndpoint:   $ActiveDirectoryEndpoint"
+    Write-Log "ResourceManagerEndpoint:   $ResourceManagerEndpoint"
+    Write-Log "------------------------------------------------------------------------"
+    Write-Log "Variables"
+    Write-Log "------------------------------------------------------------------------"
+    Write-Log "azureCNIInterfaceFile: $azureCNIInterfaceFile"
+    Write-Log "networkInterfacesFile:   $networkInterfacesFile"
+    Write-Log "------------------------------------------------------------------------"
+
+    Write-Log "Generating token for Azure Resource Manager"
+
+    $tokenURL = ""
+    if($IdentitySystem -ieq "adfs") {
+        $tokenURL = "$($ActiveDirectoryEndpoint)adfs/oauth2/token"
+    } else {
+        $tokenURL = "$($ActiveDirectoryEndpoint)$TenantId/oauth2/token"
+    }
+
+    $body = "grant_type=client_credentials&client_id=$AADClientId&client_secret=$AADClientSecret&resource=$ServiceManagementEndpoint"
+
+    $token = Invoke-RestMethod -Uri $tokenURL -Method Post -Body $body -ContentType 'application/x-www-form-urlencoded' | select -ExpandProperty access_token
+
+    Write-Log "Fetching network interface configuration for node"
+
+    $interfacesUri = "$($ResourceManagerEndpoint)subscriptions/$SubscriptionId/resourceGroups/$ResourceGroup/providers/Microsoft.Network/networkInterfaces/$($NetworkInterface)?api-version=$NetworkAPIVersion"
+    $headers = @{Authorization="Bearer $token"}
+
+    Invoke-RestMethod -Uri $interfacesUri -Method Get -ContentType 'application/json' -Headers $headers -OutFile $nicConfigFile
+
+    Write-Log "Generating Azure CNI interface file"
+
+    $nicConfig = Get-Content $nicConfigFile | ConvertFrom-Json
+
+    $ipAddresses = $nicConfig.properties.ipConfigurations | % { @{"Address"=$_.properties.privateIPAddress; "IsPrimary"=$_.properties.primary}}
+
+    $config = @{Interfaces = @(@{
+        MacAddress = $nicConfig.properties.macAddress
+        IsPrimary = $nicConfig.properties.primary
+        IPSubnets = @(@{
+            Prefix = $SubnetPrefix
+            IPAddresses = $ipAddresses
+        })
+    })}
+
+    $config | ConvertTo-Json -Depth 6 | Out-File -FilePath $azureCNIInterfaceFile -Encoding ascii
+}
+

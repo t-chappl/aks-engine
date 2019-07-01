@@ -42,6 +42,20 @@ param(
     [ValidateNotNullOrEmpty()]
     $AADClientSecret, # base64
 
+    {{if IsAzureStackCloud}}{{if IsAzureCNI}}
+    [parameter(Mandatory=$true)]
+    [ValidateNotNullOrEmpty()]
+    $NetworkInterface,
+
+    [parameter(Mandatory=$true)]
+    [ValidateNotNullOrEmpty()]
+    $NetworkAPIVersion,
+
+    [parameter(Mandatory=$true)]
+    [ValidateNotNullOrEmpty()]
+    $SubnetPrefix,
+    {{end}}{{end}}
+
     [parameter(Mandatory=$true)]
     [ValidateNotNullOrEmpty()]
     $TargetEnvironment
@@ -69,7 +83,7 @@ $global:DockerVersion = "{{WrapAsParameter "windowsDockerVersion"}}"
 
 ## VM configuration passed by Azure
 $global:WindowsTelemetryGUID = "{{WrapAsParameter "windowsTelemetryGUID"}}"
-{{if IsIdentitySystemADFS}}
+{{if eq GetIdentitySystem "adfs"}}
 $global:TenantId = "adfs"
 {{else}}
 $global:TenantId = "{{WrapAsVariable "tenantID"}}"
@@ -238,6 +252,23 @@ try
                                -MasterSubnet $global:MasterSubnet `
                                -KubeServiceCIDR $global:KubeServiceCIDR `
                                -VNetCIDR $global:VNetCIDR
+
+            {{if IsAzureStackCloud}}{{if IsAzureCNI}}
+            GenerateAzureStackCNIConfig `
+                -TenantId $global:TenantId `
+                -SubscriptionId $global:SubscriptionId `
+                -ResourceGroup $global:ResourceGroup `
+                -AADClientId $AADClientId `
+                -AADClientSecret $([System.Text.Encoding]::ASCII.GetString([System.Convert]::FromBase64String($AADClientSecret))) `
+                -NetworkInterface $NetworkInterface `
+                -NetworkAPIVersion $NetworkAPIVersion `
+                -SubnetPrefix $SubnetPrefix `
+                -ServiceManagementEndpoint "{{ GetServiceManagementEndpoint }}" `
+                -ActiveDirectoryEndpoint "{{ GetActiveDirectoryEndpoint }}" `
+                -ResourceManagerEndpoint "{{ GetResourceManagerEndpoint }}" `
+                -IdentitySystem "{{ GetIdentitySystem }}"
+            {{end}}{{end}}
+
         } elseif ($global:NetworkPlugin -eq "kubenet") {
             Update-WinCNI -CNIPath $global:CNIPath
             Get-HnsPsm1 -HNSModule $global:HNSModule

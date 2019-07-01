@@ -277,6 +277,23 @@ func TestCreateCustomScriptExtension(t *testing.T) {
 	if diff != "" {
 		t.Errorf("unexpected diff while expecting equal structs: %s", diff)
 	}
+
+	// Test with custom cloud and Azure CNI
+	cs.Location = "local"
+	cs.Properties.CustomCloudProfile = &api.CustomCloudProfile{}
+	cs.Properties.OrchestratorProfile = &api.OrchestratorProfile{KubernetesConfig: &api.KubernetesConfig{NetworkPlugin: NetworkPluginAzure}}
+
+	cse = CreateCustomScriptExtension(cs)
+
+	expectedCSE.ProtectedSettings = &map[string]interface{}{
+		"commandToExecute": `[concat('retrycmd_if_failure() { r=$1; w=$2; t=$3; shift && shift && shift; for i in $(seq 1 $r); do timeout $t ${@}; [ $? -eq 0  ] && break || if [ $i -eq $r ]; then return 1; else sleep $w; fi; done };  for i in $(seq 1 1200); do if [ -f /opt/azure/containers/provision.sh ]; then break; fi; if [ $i -eq 1200 ]; then exit 100; else sleep 1; fi; done; ', variables('provisionScriptParametersCommon'),` + generateUserAssignedIdentityClientIDParameter(userAssignedIDEnabled) + `,' NETWORK_INTERFACE=',concat(variables('masterVMNamePrefix'), 'nic-', copyIndex(variables('masterOffset'))),' SUBNET_PREFIX=',parameters('masterSubnet'),' ',variables('provisionScriptParametersMaster'), ' /usr/bin/nohup /bin/bash -c "/bin/bash /opt/azure/containers/provision.sh >> /var/log/azure/cluster-provision.log 2>&1"')]`,
+	}
+
+	diff = cmp.Diff(cse, expectedCSE)
+
+	if diff != "" {
+		t.Errorf("unexpected diff while expecting equal structs: %s", diff)
+	}
 }
 
 func TestCreateAgentVMASCustomScriptExtension(t *testing.T) {
@@ -352,13 +369,14 @@ func TestCreateAgentVMASCustomScriptExtension(t *testing.T) {
 		t.Errorf("unexpected diff while expecting equal structs: %s", diff)
 	}
 
-	// Test with Azure Stack
+	// Test with Azure Stack and kubenet
 	cs.Properties.FeatureFlags.BlockOutboundInternet = false
 	cs.Properties.CustomCloudProfile = &api.CustomCloudProfile{}
 	profile = &api.AgentPoolProfile{
 		Name:   "sample",
 		OSType: "Linux",
 	}
+	cs.Properties.OrchestratorProfile = &api.OrchestratorProfile{KubernetesConfig: &api.KubernetesConfig{NetworkPlugin: NetworkPluginKubenet}}
 	cse = createAgentVMASCustomScriptExtension(cs, profile)
 
 	expectedCSE.ProtectedSettings = &map[string]interface{}{
@@ -371,9 +389,24 @@ func TestCreateAgentVMASCustomScriptExtension(t *testing.T) {
 		t.Errorf("unexpected diff while expecting equal structs: %s", diff)
 	}
 
+	// Test with Azure Stack and Azure CNI on Linux
+	cs.Properties.OrchestratorProfile.KubernetesConfig.NetworkPlugin = NetworkPluginAzure
+	cse = createAgentVMASCustomScriptExtension(cs, profile)
+
+	expectedCSE.ProtectedSettings = &map[string]interface{}{
+		"commandToExecute": `[concat('retrycmd_if_failure() { r=$1; w=$2; t=$3; shift && shift && shift; for i in $(seq 1 $r); do timeout $t ${@}; [ $? -eq 0  ] && break || if [ $i -eq $r ]; then return 1; else sleep $w; fi; done };  for i in $(seq 1 1200); do if [ -f /opt/azure/containers/provision.sh ]; then break; fi; if [ $i -eq 1200 ]; then exit 100; else sleep 1; fi; done; ', variables('provisionScriptParametersCommon'),` + generateUserAssignedIdentityClientIDParameter(userAssignedIDEnabled) + `,' NETWORK_INTERFACE=',concat(variables('sampleVMNamePrefix'), 'nic-', copyIndex(variables('sampleOffset'))),' SUBNET_PREFIX=',parameters('sampleSubnet'),' GPU_NODE=false SGX_NODE=false AUDITD_ENABLED=false /usr/bin/nohup /bin/bash -c "/bin/bash /opt/azure/containers/provision.sh >> /var/log/azure/cluster-provision.log 2>&1"')]`,
+	}
+
+	diff = cmp.Diff(cse, expectedCSE)
+
+	if diff != "" {
+		t.Errorf("unexpected diff while expecting equal structs: %s", diff)
+	}
+
 	// Test with EnableRunInBackground and China Location
 	cs.Properties.FeatureFlags.BlockOutboundInternet = false
 	cs.Properties.CustomCloudProfile = nil
+	cs.Properties.OrchestratorProfile = nil
 	cs.Properties.FeatureFlags.EnableCSERunInBackground = true
 	cs.Location = "chinanorth"
 	profile = &api.AgentPoolProfile{
@@ -406,6 +439,24 @@ func TestCreateAgentVMASCustomScriptExtension(t *testing.T) {
 	expectedCSE.TypeHandlerVersion = to.StringPtr("1.8")
 	expectedCSE.ProtectedSettings = &map[string]interface{}{
 		"commandToExecute": "[concat('powershell.exe -ExecutionPolicy Unrestricted -command \"', '$arguments = ', variables('singleQuote'),'-MasterIP ',variables('kubernetesAPIServerIP'),' -KubeDnsServiceIp ',parameters('kubeDnsServiceIp'),' -MasterFQDNPrefix ',variables('masterFqdnPrefix'),' -Location ',variables('location'),' -TargetEnvironment ',parameters('targetEnvironment'),' -AgentKey ',parameters('clientPrivateKey'),' -AADClientId ',variables('servicePrincipalClientId'),' -AADClientSecret ',variables('singleQuote'),variables('singleQuote'),base64(variables('servicePrincipalClientSecret')),variables('singleQuote'),variables('singleQuote'), ' ',variables('singleQuote'), ' ; ', variables('windowsCustomScriptSuffix'), '\" > %SYSTEMDRIVE%\\AzureData\\CustomDataSetupScript.log 2>&1')]",
+	}
+
+	diff = cmp.Diff(cse, expectedCSE)
+
+	if diff != "" {
+		t.Errorf("unexpected diff while expecting equal structs: %s", diff)
+	}
+
+
+
+	// Test with Azure Stack and Azure CNI on Windows
+	cs.Properties.CustomCloudProfile = &api.CustomCloudProfile{}
+	cs.Properties.OrchestratorProfile = &api.OrchestratorProfile{KubernetesConfig: &api.KubernetesConfig{NetworkPlugin: NetworkPluginAzure}}
+	profile.OSType = "Windows"
+	cse = createAgentVMASCustomScriptExtension(cs, profile)
+
+	expectedCSE.ProtectedSettings = &map[string]interface{}{
+		"commandToExecute": "[concat('powershell.exe -ExecutionPolicy Unrestricted -command \"', '$arguments = ', variables('singleQuote'),'-MasterIP ',variables('kubernetesAPIServerIP'),' -KubeDnsServiceIp ',parameters('kubeDnsServiceIp'),' -MasterFQDNPrefix ',variables('masterFqdnPrefix'),' -Location ',variables('location'),' -TargetEnvironment ',parameters('targetEnvironment'),' -AgentKey ',parameters('clientPrivateKey'),' -AADClientId ',variables('servicePrincipalClientId'),' -AADClientSecret ',variables('singleQuote'),variables('singleQuote'),base64(variables('servicePrincipalClientSecret')),variables('singleQuote'),variables('singleQuote'),' -NetworkInterface ',concat(variables('sampleVMNamePrefix'), 'nic-', copyIndex(variables('sampleOffset'))),' -SubnetPrefix ',parameters('sampleSubnet'),' -NetworkAPIVersion ',variables('apiVersionNetwork'), ' ',variables('singleQuote'), ' ; ', variables('windowsCustomScriptSuffix'), '\" > %SYSTEMDRIVE%\\AzureData\\CustomDataSetupScript.log 2>&1')]",
 	}
 
 	diff = cmp.Diff(cse, expectedCSE)
