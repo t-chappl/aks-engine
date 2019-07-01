@@ -10918,11 +10918,11 @@ configureAzureStackInterfaces() {
     echo "------------------------------------------------------------------------"
     echo "Parameters"
     echo "------------------------------------------------------------------------"
-    echo "SUBNET_CIDR:              $SUBNET_CIDR"
+    echo "SUBNET_PREFIX:              $SUBNET_PREFIX"
     echo "AZURE_CNI_INTERFACE_FILE: $AZURE_CNI_INTERFACE_FILE"
     echo "------------------------------------------------------------------------"
 
-    cat $NETWORK_INTERFACES_FILE | jq "{Interfaces: [{MacAddress: .properties.macAddress, IsPrimary: .properties.primary, IPSubnets: [{Prefix: \"$SUBNET_CIDR\", IPAddresses: .properties.ipConfigurations | [.[] | {Address: .properties.privateIPAddress, IsPrimary: .properties.primary}]}]}]}" > $AZURE_CNI_INTERFACE_FILE
+    cat $NETWORK_INTERFACES_FILE | jq "{Interfaces: [{MacAddress: .properties.macAddress, IsPrimary: .properties.primary, IPSubnets: [{Prefix: \"$SUBNET_PREFIX\", IPAddresses: .properties.ipConfigurations | [.[] | {Address: .properties.privateIPAddress, IsPrimary: .properties.primary}]}]}]}" > $AZURE_CNI_INTERFACE_FILE
 
     set -x
 }`)
