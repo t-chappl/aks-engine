@@ -75,7 +75,7 @@ func CreateCustomScriptExtension(cs *api.ContainerService) VirtualMachineExtensi
 
 	var azureStackCNIParams string
 	if cs.Properties.IsAzureStackCloud() && cs.Properties.OrchestratorProfile.IsAzureCNI() {
-		azureStackCNIParams = "' NETWORK_INTERFACE=',concat(variables('masterVMNamePrefix'), 'nic-', copyIndex(variables('masterOffset'))),' SUBNET_CIDR=',parameters('masterSubnet'),' ',"
+		azureStackCNIParams = "' NETWORK_INTERFACE=',concat(variables('masterVMNamePrefix'), 'nic-', copyIndex(variables('masterOffset'))),' SUBNET_PREFIX=',parameters('masterSubnet'),' ',"
 	}
 
 	vmExtension := compute.VirtualMachineExtension{
@@ -88,7 +88,7 @@ func CreateCustomScriptExtension(cs *api.ContainerService) VirtualMachineExtensi
 			AutoUpgradeMinorVersion: to.BoolPtr(true),
 			Settings:                &map[string]interface{}{},
 			ProtectedSettings: &map[string]interface{}{
-				"commandToExecute": fmt.Sprintf("[concat('retrycmd_if_failure() { r=$1; w=$2; t=$3; shift && shift && shift; for i in $(seq 1 $r); do timeout $t ${@}; [ $? -eq 0  ] && break || if [ $i -eq $r ]; then return 1; else sleep $w; fi; done }; "+outBoundCmd+" for i in $(seq 1 1200); do if [ -f /opt/azure/containers/provision.sh ]; then break; fi; if [ $i -eq 1200 ]; then exit 100; else sleep 1; fi; done; ', variables('provisionScriptParametersCommon'),%s,%s variables('provisionScriptParametersMaster'), ' /usr/bin/nohup /bin/bash -c \"/bin/bash /opt/azure/containers/provision.sh >> /var/log/azure/cluster-provision.log 2>&1\"')]", generateUserAssignedIdentityClientIDParameter(userAssignedIDEnabled), azureStackCNIParams),
+				"commandToExecute": fmt.Sprintf("[concat('retrycmd_if_failure() { r=$1; w=$2; t=$3; shift && shift && shift; for i in $(seq 1 $r); do timeout $t ${@}; [ $? -eq 0  ] && break || if [ $i -eq $r ]; then return 1; else sleep $w; fi; done }; "+outBoundCmd+" for i in $(seq 1 1200); do if [ -f /opt/azure/containers/provision.sh ]; then break; fi; if [ $i -eq 1200 ]; then exit 100; else sleep 1; fi; done; ', variables('provisionScriptParametersCommon'),%s,%svariables('provisionScriptParametersMaster'), ' /usr/bin/nohup /bin/bash -c \"/bin/bash /opt/azure/containers/provision.sh >> /var/log/azure/cluster-provision.log 2>&1\"')]", generateUserAssignedIdentityClientIDParameter(userAssignedIDEnabled), azureStackCNIParams),
 			},
 		},
 		Type: to.StringPtr("Microsoft.Compute/virtualMachines/extensions"),
@@ -168,7 +168,7 @@ func createAgentVMASCustomScriptExtension(cs *api.ContainerService, profile *api
 		}
 	} else {
 		if cs.Properties.IsAzureStackCloud() && cs.Properties.OrchestratorProfile.IsAzureCNI() {
-			azureStackCNIParams = fmt.Sprintf("' NETWORK_INTERFACE=',concat(variables('%[1]sVMNamePrefix'), 'nic-', copyIndex(variables('%[1]sOffset'))),' SUBNET_CIDR=',parameters('%[1]sSubnet'),", profile.Name)
+			azureStackCNIParams = fmt.Sprintf("' NETWORK_INTERFACE=',concat(variables('%[1]sVMNamePrefix'), 'nic-', copyIndex(variables('%[1]sOffset'))),' SUBNET_PREFIX=',parameters('%[1]sSubnet'),", profile.Name)
 		}
 
 		vmExtension.Publisher = to.StringPtr("Microsoft.Azure.Extensions")
