@@ -3,32 +3,34 @@
 
 package azurestack
 
-/*
 import (
 	"context"
 	"testing"
-)*/
+)
 
-// TODO fix and re-enable
-/*
 func TestDeleteNetworkInterface(t *testing.T) {
 	mc, err := NewHTTPMockClient()
 	if err != nil {
 		t.Fatalf("failed to create HttpMockClient - %s", err)
 	}
-	mc.Activate()
-	defer mc.DeactivateAndReset()
+
 	mc.RegisterLogin()
+	mc.RegisterDeleteNetworkInterface()
+
+	err = mc.Activate()
+	if err != nil {
+		t.Fatalf("failed to activate HttpMockClient - %s", err)
+	}
+	defer mc.DeactivateAndReset()
+
 	env := mc.GetEnvironment()
 	azureClient, err := NewAzureClientWithClientSecret(env, subscriptionID, "clientID", "secret")
 	if err != nil {
 		t.Fatalf("can not get client %s", err)
 	}
 
-	mc.RegisterDeleteNetworkInterface()
 	err = azureClient.DeleteNetworkInterface(context.Background(), resourceGroup, virtualNicName)
 	if err != nil {
 		t.Error(err)
 	}
 }
-*/

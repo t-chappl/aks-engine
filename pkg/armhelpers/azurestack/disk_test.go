@@ -3,34 +3,34 @@
 
 package azurestack
 
-/*
 import (
 	"context"
 	"testing"
-)*/
+)
 
-// TODO fix and re-enable
-/*
 func TestDeleteManagedDisk(t *testing.T) {
 	mc, err := NewHTTPMockClient()
 	if err != nil {
 		t.Fatalf("failed to create HttpMockClient - %s", err)
 	}
-	mc.Activate()
-	defer mc.DeactivateAndReset()
-	mc.RegisterLogin()
-	env := mc.GetEnvironment()
 
+	mc.RegisterLogin()
+	mc.RegisterDeleteManagedDisk()
+
+	err = mc.Activate()
+	if err != nil {
+		t.Fatalf("failed to activate HttpMockClient - %s", err)
+	}
+	defer mc.DeactivateAndReset()
+
+	env := mc.GetEnvironment()
 	azureClient, err := NewAzureClientWithClientSecret(env, subscriptionID, "clientID", "secret")
 	if err != nil {
 		t.Fatalf("can not get client %s", err)
 	}
-
-	mc.RegisterDeleteManagedDisk()
 
 	err = azureClient.DeleteManagedDisk(context.Background(), resourceGroup, virutalDiskName)
 	if err != nil {
 		t.Error(err)
 	}
 }
-*/
