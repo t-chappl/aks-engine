@@ -22642,7 +22642,7 @@ GenerateAzureStackCNIConfig
     Write-Log "Variables"
     Write-Log "------------------------------------------------------------------------"
     Write-Log "azureCNIInterfaceFile: $azureCNIInterfaceFile"
-    Write-Log "networkInterfacesFile:   $networkInterfacesFile"
+    Write-Log "networkInterfacesFile:   $nicConfigFile"
     Write-Log "------------------------------------------------------------------------"
 
     Write-Log "Generating token for Azure Resource Manager"
@@ -22654,7 +22654,9 @@ GenerateAzureStackCNIConfig
         $tokenURL = "$($ActiveDirectoryEndpoint)$TenantId/oauth2/token"
     }
 
-    $body = "grant_type=client_credentials&client_id=$AADClientId&client_secret=$AADClientSecret&resource=$ServiceManagementEndpoint"
+    $encodedSecret = [System.Web.HttpUtility]::UrlEncode($AADClientSecret)
+
+    $body = "grant_type=client_credentials&client_id=$AADClientId&client_secret=$encodedSecret&resource=$ServiceManagementEndpoint"
 
     $token = Invoke-RestMethod -Uri $tokenURL -Method Post -Body $body -ContentType 'application/x-www-form-urlencoded' | select -ExpandProperty access_token
 
