@@ -136,19 +136,24 @@ func TestGetTemplateFuncMap(t *testing.T) {
 
 func TestGetIdentitySystem(t *testing.T) {
 	for _, test := range []struct {
-		desc     string
-		apiModel string
-		correctResult   string
+		desc           string
+		apiModel       string
+		expectedResult string
 	}{
 		{
-			desc:     "should return adfs when identitySystem is set",
-			apiModel: `{"properties":{"customCloudProfile": {"identitySystem": "adfs"}}}`,
-			correctResult:   "adfs",
+			desc:           "should return adfs when identitySystem is set to adfs",
+			apiModel:       `{"properties":{"customCloudProfile": {"identitySystem": "adfs"}}}`,
+			expectedResult: "adfs",
 		},
 		{
-			desc:     "should return azure_ad when not azure stack",
-			apiModel: getAPIModelString(),
-			correctResult:   "azure_ad",
+			desc:           "should return azure_ad when identitySystem is set to azure_ad",
+			apiModel:       `{"properties":{"customCloudProfile": {"identitySystem": "azure_ad"}}}`,
+			expectedResult: "azure_ad",
+		},
+		{
+			desc:           "should return azure_ad when not azure stack",
+			apiModel:       getAPIModelString(),
+			expectedResult: "azure_ad",
 		},
 	} {
 		t.Run(test.desc, func(t *testing.T) {
@@ -159,7 +164,7 @@ func TestGetIdentitySystem(t *testing.T) {
 
 			v := reflect.ValueOf(funcmap["GetIdentitySystem"])
 			ret := v.Call(make([]reflect.Value, 0))
-			if ret[0].Interface() != test.correctResult {
+			if ret[0].Interface() != test.expectedResult {
 				t.Fatalf("IsIdentitySystemADFS returned incorrect value")
 			}
 		})
@@ -183,7 +188,7 @@ func TestGetBase64EncodedEnvironmentJSON(t *testing.T) {
 }
 
 func TestGetAzureStackEndpoints(t *testing.T) {
-	masApiModel := `{"properties":{"customCloudProfile":{"environment":{"serviceManagementEndpoint":"a","resourceManagerEndpoint":"b","activeDirectoryEndpoint":"c"}}}}`
+	masApiModel := `{"properties":{"customCloudProfile":{"environment":{"serviceManagementEndpoint":"https://management.azurestack.onmicrosoft.com/00000000-0000-0000-0000-0000000000","resourceManagerEndpoint":"https://management.local.azurestack.external/","activeDirectoryEndpoint":"https://login.microsoftonline.com/"}}}}`
 
 	for _, test := range []struct {
 		desc string
@@ -198,10 +203,10 @@ func TestGetAzureStackEndpoints(t *testing.T) {
 			correctResult: "",
 		},
 		{
-			desc: `GetServiceManagementEndpoint should return "a" when not azure stack`,
+			desc: `GetServiceManagementEndpoint should return the service management endpoint`,
 			apiModelString: masApiModel,
 			method: "GetServiceManagementEndpoint",
-			correctResult: "a",
+			correctResult: "https://management.azurestack.onmicrosoft.com/00000000-0000-0000-0000-0000000000",
 		},
 		{
 			desc: `GetResourceManagerEndpoint should return "" when not azure stack`,
@@ -210,10 +215,10 @@ func TestGetAzureStackEndpoints(t *testing.T) {
 			correctResult: "",
 		},
 		{
-			desc: `GetResourceManagerEndpoint should return "b" when not azure stack`,
+			desc: `GetResourceManagerEndpoint should return the resource manager endpoint`,
 			apiModelString: masApiModel,
 			method: "GetResourceManagerEndpoint",
-			correctResult: "b",
+			correctResult: "https://management.local.azurestack.external/",
 		},
 		{
 			desc: `GetActiveDirectoryEndpoint should return "" when not azure stack`,
@@ -222,10 +227,10 @@ func TestGetAzureStackEndpoints(t *testing.T) {
 			correctResult: "",
 		},
 		{
-			desc: `GetActiveDirectoryEndpoint should return "c" when not azure stack`,
+			desc: `GetActiveDirectoryEndpoint should return the active directory endpoint`,
 			apiModelString: masApiModel,
 			method: "GetActiveDirectoryEndpoint",
-			correctResult: "c",
+			correctResult: "https://login.microsoftonline.com/",
 		},
 	} {
 		t.Run(test.desc, func(t *testing.T) {
