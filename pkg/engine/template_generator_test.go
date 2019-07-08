@@ -9,9 +9,8 @@ import (
 	"testing"
 	"text/template"
 
-	"github.com/pkg/errors"
-
 	"github.com/Azure/aks-engine/pkg/api"
+	"github.com/pkg/errors"
 )
 
 func TestGenerateTemplateV2(t *testing.T) {
@@ -188,49 +187,49 @@ func TestGetBase64EncodedEnvironmentJSON(t *testing.T) {
 }
 
 func TestGetAzureStackEndpoints(t *testing.T) {
-	masApiModel := `{"properties":{"customCloudProfile":{"environment":{"serviceManagementEndpoint":"https://management.azurestack.onmicrosoft.com/00000000-0000-0000-0000-0000000000","resourceManagerEndpoint":"https://management.local.azurestack.external/","activeDirectoryEndpoint":"https://login.microsoftonline.com/"}}}}`
+	masAPIModel := `{"properties":{"customCloudProfile":{"environment":{"serviceManagementEndpoint":"https://management.azurestack.onmicrosoft.com/00000000-0000-0000-0000-0000000000","resourceManagerEndpoint":"https://management.local.azurestack.external/","activeDirectoryEndpoint":"https://login.microsoftonline.com/"}}}}`
 
 	for _, test := range []struct {
-		desc string
+		desc           string
 		apiModelString string
-		method string
-		correctResult string
+		method         string
+		correctResult  string
 	}{
 		{
-			desc: `GetServiceManagementEndpoint should return "" when not azure stack`,
+			desc:           `GetServiceManagementEndpoint should return "" when not azure stack`,
 			apiModelString: getAPIModelString(),
-			method: "GetServiceManagementEndpoint",
-			correctResult: "",
+			method:         "GetServiceManagementEndpoint",
+			correctResult:  "",
 		},
 		{
-			desc: `GetServiceManagementEndpoint should return the service management endpoint`,
-			apiModelString: masApiModel,
-			method: "GetServiceManagementEndpoint",
-			correctResult: "https://management.azurestack.onmicrosoft.com/00000000-0000-0000-0000-0000000000",
+			desc:           `GetServiceManagementEndpoint should return the service management endpoint`,
+			apiModelString: masAPIModel,
+			method:         "GetServiceManagementEndpoint",
+			correctResult:  "https://management.azurestack.onmicrosoft.com/00000000-0000-0000-0000-0000000000",
 		},
 		{
-			desc: `GetResourceManagerEndpoint should return "" when not azure stack`,
+			desc:           `GetResourceManagerEndpoint should return "" when not azure stack`,
 			apiModelString: getAPIModelString(),
-			method: "GetResourceManagerEndpoint",
-			correctResult: "",
+			method:         "GetResourceManagerEndpoint",
+			correctResult:  "",
 		},
 		{
-			desc: `GetResourceManagerEndpoint should return the resource manager endpoint`,
-			apiModelString: masApiModel,
-			method: "GetResourceManagerEndpoint",
-			correctResult: "https://management.local.azurestack.external/",
+			desc:           `GetResourceManagerEndpoint should return the resource manager endpoint`,
+			apiModelString: masAPIModel,
+			method:         "GetResourceManagerEndpoint",
+			correctResult:  "https://management.local.azurestack.external/",
 		},
 		{
-			desc: `GetActiveDirectoryEndpoint should return "" when not azure stack`,
+			desc:           `GetActiveDirectoryEndpoint should return "" when not azure stack`,
 			apiModelString: getAPIModelString(),
-			method: "GetActiveDirectoryEndpoint",
-			correctResult: "",
+			method:         "GetActiveDirectoryEndpoint",
+			correctResult:  "",
 		},
 		{
-			desc: `GetActiveDirectoryEndpoint should return the active directory endpoint`,
-			apiModelString: masApiModel,
-			method: "GetActiveDirectoryEndpoint",
-			correctResult: "https://login.microsoftonline.com/",
+			desc:           `GetActiveDirectoryEndpoint should return the active directory endpoint`,
+			apiModelString: masAPIModel,
+			method:         "GetActiveDirectoryEndpoint",
+			correctResult:  "https://login.microsoftonline.com/",
 		},
 	} {
 		t.Run(test.desc, func(t *testing.T) {

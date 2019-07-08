@@ -447,8 +447,6 @@ func TestCreateAgentVMASCustomScriptExtension(t *testing.T) {
 		t.Errorf("unexpected diff while expecting equal structs: %s", diff)
 	}
 
-
-
 	// Test with Azure Stack and Azure CNI on Windows
 	cs.Properties.CustomCloudProfile = &api.CustomCloudProfile{}
 	cs.Properties.OrchestratorProfile = &api.OrchestratorProfile{KubernetesConfig: &api.KubernetesConfig{NetworkPlugin: NetworkPluginAzure}}
