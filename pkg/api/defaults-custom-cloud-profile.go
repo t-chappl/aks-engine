@@ -116,8 +116,6 @@ func (p *Properties) SetAzureStackCloudSpec() error {
 		}
 		azureStackCloudSpec.EndpointConfig.ResourceManagerVMDNSSuffix = p.CustomCloudProfile.Environment.ResourceManagerVMDNSSuffix
 		azureStackCloudSpec.CloudName = AzureStackCloud
-		azureStackCloudSpec.KubernetesSpecConfig.VnetCNILinuxPluginsDownloadURL = "https://chad.blob.core.windows.net/public/cni3.tgz"
-		azureStackCloudSpec.KubernetesSpecConfig.VnetCNIWindowsPluginsDownloadURL = "https://chad.blob.core.windows.net/public/cni3.zip"
 		// Use the custom input to overwrite the default values in AzureStackCloudSpec
 		if p.CustomCloudProfile.AzureEnvironmentSpecConfig != nil {
 			ascc := p.CustomCloudProfile.AzureEnvironmentSpecConfig
