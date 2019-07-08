@@ -21844,7 +21844,30 @@ function Initialize-DataDirectories {
             New-Item -ItemType Directory -Path $_
         }
     }
-}`)
+}
+
+function Retry-Command
+{
+    Param(
+        [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][string]
+        $Command,
+        [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][hashtable]
+        $Args,
+        [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][int]
+        $Retries,
+        [Parameter(Mandatory=$true)][ValidateNotNullOrEmpty()][int]
+        $RetryDelaySeconds
+    )
+
+    for ($i = 0; $i -lt $Retries; $i++) {
+        try {
+            return & $Command @Args
+        } catch {
+            Start-Sleep $RetryDelaySeconds
+        }
+    }
+}
+`)
 
 func k8sKuberneteswindowsfunctionsPs1Bytes() ([]byte, error) {
 	return _k8sKuberneteswindowsfunctionsPs1, nil
@@ -22670,7 +22693,7 @@ GenerateAzureStackCNIConfig
     Write-Log "Variables"
     Write-Log "------------------------------------------------------------------------"
     Write-Log "azureCNIInterfaceFile: $azureCNIInterfaceFile"
-    Write-Log "networkInterfacesFile:   $nicConfigFile"
+    Write-Log "networkInterfacesFile: $nicConfigFile"
     Write-Log "------------------------------------------------------------------------"
 
     Write-Log "Generating token for Azure Resource Manager"
@@ -22686,14 +22709,24 @@ GenerateAzureStackCNIConfig
 
     $body = "grant_type=client_credentials&client_id=$AADClientId&client_secret=$encodedSecret&resource=$ServiceManagementEndpoint"
 
-    $token = Invoke-RestMethod -Uri $tokenURL -Method Post -Body $body -ContentType 'application/x-www-form-urlencoded' | select -ExpandProperty access_token
+    $tokenResponse = Retry-Command -Command "Invoke-RestMethod" -Args @{Uri=$tokenURL; Method="Post"; Body=$body; ContentType='application/x-www-form-urlencoded'} -Retries 5 -RetryDelaySeconds 1
+
+    if(!$tokenResponse) {
+        throw 'Error generating token for Azure Resource Manager'
+    }
+
+    $token = $tokenResponse | select -ExpandProperty access_token
 
     Write-Log "Fetching network interface configuration for node"
 
     $interfacesUri = "$($ResourceManagerEndpoint)subscriptions/$SubscriptionId/resourceGroups/$ResourceGroup/providers/Microsoft.Network/networkInterfaces/$($NetworkInterface)?api-version=$NetworkAPIVersion"
     $headers = @{Authorization="Bearer $token"}
 
-    Invoke-RestMethod -Uri $interfacesUri -Method Get -ContentType 'application/json' -Headers $headers -OutFile $nicConfigFile
+    Retry-Command -Command "Invoke-RestMethod" -Args @{Uri=$interfacesUri; Method="Get"; ContentType="application/json"; Headers=$headers; OutFile=$nicConfigFile} -Retries 5 -RetryDelaySeconds 1
+
+    if(!$(Test-Path $nicConfigFile)) {
+        throw 'Error fetching network interface configuration for node'
+    }
 
     Write-Log "Generating Azure CNI interface file"
 
