@@ -11750,13 +11750,13 @@ configureAzureStackInterfaces() {
     echo "TOKEN_URL:                       $TOKEN_URL"
     echo "------------------------------------------------------------------------"
 
-    TOKEN=` + "`" + `curl -s --retry 5 --retry-delay 10 --max-time 60 -f -X POST \
+    TOKEN=$(curl -s --retry 5 --retry-delay 10 --max-time 60 -f -X POST \
         -H "Content-Type: application/x-www-form-urlencoded" \
         -d "grant_type=client_credentials" \
         -d "client_id=$SERVICE_PRINCIPAL_CLIENT_ID" \
         --data-urlencode "client_secret=$SERVICE_PRINCIPAL_CLIENT_SECRET" \
         --data-urlencode "resource=$SERVICE_MANAGEMENT_ENDPOINT" \
-        $TOKEN_URL | jq '.access_token' | xargs` + "`" + `
+        $TOKEN_URL | jq '.access_token' | xargs)
 
     if [[ -z "$TOKEN" ]]; then
         echo "Error generating token for Azure Resource Manager"
@@ -11793,7 +11793,7 @@ configureAzureStackInterfaces() {
     echo "AZURE_CNI_INTERFACE_FILE: $AZURE_CNI_INTERFACE_FILE"
     echo "------------------------------------------------------------------------"
 
-    cat $NETWORK_INTERFACES_FILE | jq "{Interfaces: [{MacAddress: .properties.macAddress, IsPrimary: .properties.primary, IPSubnets: [{Prefix: \"$SUBNET_PREFIX\", IPAddresses: .properties.ipConfigurations | [.[] | {Address: .properties.privateIPAddress, IsPrimary: .properties.primary}]}]}]}" > $AZURE_CNI_INTERFACE_FILE
+    jq "{Interfaces: [{MacAddress: .properties.macAddress, IsPrimary: .properties.primary, IPSubnets: [{Prefix: \"$SUBNET_PREFIX\", IPAddresses: .properties.ipConfigurations | [.[] | {Address: .properties.privateIPAddress, IsPrimary: .properties.primary}]}]}]}" $NETWORK_INTERFACES_FILE > $AZURE_CNI_INTERFACE_FILE
 
     set -x
 }`)
