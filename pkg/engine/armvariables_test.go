@@ -627,7 +627,7 @@ func TestK8sVars(t *testing.T) {
 		"subscriptionId":                            "[subscription().subscriptionId]",
 		"tenantId":                                  "[subscription().tenantId]",
 		"truncatedResourceGroup":                    "[take(replace(replace(resourceGroup().name, '(', '-'), ')', '-'), 63)]",
-		"useInstanceMetadata":                       "true",
+		"useInstanceMetadata":                       "false",
 		"useManagedIdentityExtension":               "false",
 		"userAssignedClientID":                      "",
 		"userAssignedID":                            "",
@@ -646,7 +646,7 @@ func TestK8sVars(t *testing.T) {
 		t.Errorf("unexpected diff while expecting equal structs: %s", diff)
 	}
 
-	// Test with Custom cloud and azure cni
+	// Test with Custom cloud and Azure CNI
 
 	cs.Properties.OrchestratorProfile.KubernetesConfig.NetworkPlugin = NetworkPluginAzure
 
@@ -666,6 +666,32 @@ func TestK8sVars(t *testing.T) {
 		t.Errorf("unexpected diff while expecting equal structs: %s", diff)
 	}
 
+	cs.Properties.OrchestratorProfile.KubernetesConfig.Addons = []api.KubernetesAddon{
+		{
+			Name:    AppGwIngressAddonName,
+			Enabled: to.BoolPtr(true),
+			Config: map[string]string{
+				"appgw-sku": "WAF_v2",
+			},
+		},
+	}
+
+	varMap, err = GetKubernetesVariables(cs)
+	if err != nil {
+		t.Fatal(err)
+	}
+	expectedMap["managedIdentityOperatorRoleDefinitionId"] = "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', 'f1a07417-d97a-45cb-824c-7a7467783830')]"
+	expectedMap["appGwName"] = "[concat(parameters('orchestratorName'), '-appgw-', parameters('nameSuffix'))]"
+	expectedMap["appGwSubnetName"] = "appgw-subnet"
+	expectedMap["appGwPublicIPAddressName"] = "[concat(parameters('orchestratorName'), '-appgw-ip-', parameters('nameSuffix'))]"
+	expectedMap["appGwICIdentityName"] = "[concat(parameters('orchestratorName'), '-appgw-ic-identity-', parameters('nameSuffix'))]"
+	expectedMap["appGwId"] = "[resourceId('Microsoft.Network/applicationGateways',variables('appGwName'))]"
+	expectedMap["appGwICIdentityId"] = "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('appGwICIdentityName'))]"
+	diff = cmp.Diff(varMap, expectedMap)
+
+	if diff != "" {
+		t.Errorf("unexpected diff while expecting equal structs: %s", diff)
+	}
 }
 
 func TestK8sVarsMastersOnly(t *testing.T) {

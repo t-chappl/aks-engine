@@ -1475,6 +1475,114 @@ func Test_Properties_ValidateAddons(t *testing.T) {
 			"should error using incompatible addon with coreos (blobfuse-flexvolume)",
 		)
 	}
+
+	// appgw-ingress add-on
+
+	// Basic test with UseManagedIdentity
+	p.OrchestratorProfile.KubernetesConfig = &KubernetesConfig{
+		NetworkPlugin:      "azure",
+		UseManagedIdentity: true,
+		Addons: []KubernetesAddon{
+			{
+				Name:    "appgw-ingress",
+				Enabled: to.BoolPtr(true),
+				Config: map[string]string{
+					"appgw-subnet": "10.0.0.0/16",
+				},
+			},
+		},
+	}
+
+	if err := p.validateAddons(); err != nil {
+		t.Error(
+			"should not error for correct config.",
+			err,
+		)
+	}
+
+	// Basic test with ObjectID
+	p.ServicePrincipalProfile = &ServicePrincipalProfile{
+		ObjectID: "random",
+	}
+	p.OrchestratorProfile.KubernetesConfig = &KubernetesConfig{
+		NetworkPlugin: "azure",
+		Addons: []KubernetesAddon{
+			{
+				Name:    "appgw-ingress",
+				Enabled: to.BoolPtr(true),
+				Config: map[string]string{
+					"appgw-subnet": "10.0.0.0/16",
+				},
+			},
+		},
+	}
+
+	if err := p.validateAddons(); err != nil {
+		t.Error(
+			"should not error for correct config.",
+			err,
+		)
+	}
+
+	// Test with missing objectID and UseManagedIdentity false
+	p.ServicePrincipalProfile = &ServicePrincipalProfile{}
+	p.OrchestratorProfile.KubernetesConfig = &KubernetesConfig{
+		NetworkPlugin: "azure",
+		Addons: []KubernetesAddon{
+			{
+				Name:    "appgw-ingress",
+				Enabled: to.BoolPtr(true),
+				Config: map[string]string{
+					"appgw-subnet": "10.0.0.0/16",
+				},
+			},
+		},
+	}
+
+	if err := p.validateAddons(); err == nil {
+		t.Error(
+			"should error as objectID not provided or UseManagedIdentity not true",
+			err,
+		)
+	}
+
+	// Test with wrong Network Plugin
+	p.OrchestratorProfile.KubernetesConfig = &KubernetesConfig{
+		NetworkPlugin: "kubelet",
+		Addons: []KubernetesAddon{
+			{
+				Name:    "appgw-ingress",
+				Enabled: to.BoolPtr(true),
+				Config: map[string]string{
+					"appgw-subnet": "10.0.0.0/16",
+				},
+			},
+		},
+	}
+
+	if err := p.validateAddons(); err == nil {
+		t.Errorf(
+			"should error using when not using 'azure' for Network Plugin",
+		)
+	}
+
+	// Test with missing appgw-subnet
+	p.OrchestratorProfile.KubernetesConfig = &KubernetesConfig{
+		NetworkPlugin: "azure",
+		Addons: []KubernetesAddon{
+			{
+				Name:    "appgw-ingress",
+				Enabled: to.BoolPtr(true),
+				Config:  map[string]string{},
+			},
+		},
+	}
+
+	if err := p.validateAddons(); err == nil {
+		t.Errorf(
+			"should error when missing the subnet for Application Gateway",
+		)
+	}
 }
 
 func TestWindowsVersions(t *testing.T) {
@@ -2898,6 +3006,121 @@ func TestValidateLocation(t *testing.T) {
 			},
 			expectedErr: errors.New("missing ContainerService Location"),
 		},
+		{
+			name:          "AzureStack UseInstanceMetadata is true",
+			location:      "local",
+			propertiesnil: false,
+			cs: &ContainerService{
+				Location: "local",
+				Properties: &Properties{
+					CustomCloudProfile: &CustomCloudProfile{
+						PortalURL: "https://portal.local.cotoso.com",
+					},
+					OrchestratorProfile: &OrchestratorProfile{
+						OrchestratorType:    Kubernetes,
+						OrchestratorVersion: "1.11.10",
+						KubernetesConfig: &KubernetesConfig{
+							UseInstanceMetadata: to.BoolPtr(trueVal),
+						},
+					},
+				},
+			},
+			expectedErr: errors.New("useInstanceMetadata shouldn't be set to true as feature not yet supported on Azure Stack"),
+		},
+		{
+			name:          "AzureStack EtcdDiskSizeGB is 1024",
+			location:      "local",
+			propertiesnil: false,
+			cs: &ContainerService{
+				Location: "local",
+				Properties: &Properties{
+					CustomCloudProfile: &CustomCloudProfile{
+						PortalURL: "https://portal.local.cotoso.com",
+					},
+					OrchestratorProfile: &OrchestratorProfile{
+						OrchestratorType:    Kubernetes,
+						OrchestratorVersion: "1.11.10",
+						KubernetesConfig: &KubernetesConfig{
+							EtcdDiskSizeGB: "1024",
+						},
+					},
+				},
+			},
+			expectedErr: errors.Errorf("EtcdDiskSizeGB max size supported on Azure Stack is %d", MaxAzureStackManagedDiskSize),
+		},
+		{
+			name:          "AzureStack EtcdDiskSizeGB is 1024",
+			location:      "local",
+			propertiesnil: false,
+			cs: &ContainerService{
+				Location: "local",
+				Properties: &Properties{
+					CustomCloudProfile: &CustomCloudProfile{
+						PortalURL: "https://portal.local.cotoso.com",
+					},
+					OrchestratorProfile: &OrchestratorProfile{
+						OrchestratorType:    Kubernetes,
+						OrchestratorVersion: "1.11.10",
+						KubernetesConfig: &KubernetesConfig{
+							EtcdDiskSizeGB: "1024GB",
+						},
+					},
+				},
+			},
+			expectedErr: errors.New("could not convert EtcdDiskSizeGB to int"),
+		},
+		{
+			name:          "AzureStack AcceleratedNetworking is true",
+			location:      "local",
+			propertiesnil: false,
+			cs: &ContainerService{
+				Location: "local",
+				Properties: &Properties{
+					CustomCloudProfile: &CustomCloudProfile{
+						PortalURL: "https://portal.local.cotoso.com",
+					},
+					OrchestratorProfile: &OrchestratorProfile{
+						OrchestratorType:    Kubernetes,
+						OrchestratorVersion: "1.11.10",
+					},
+					AgentPoolProfiles: []*AgentPoolProfile{
+						{
+							Name:                         "testpool",
+							Count:                        1,
+							VMSize:                       "Standard_D2_v2",
+							AcceleratedNetworkingEnabled: to.BoolPtr(trueVal),
+						},
+					},
+				},
+			},
+			expectedErr: errors.New("AcceleratedNetworkingEnabled or AcceleratedNetworkingEnabledWindows shouldn't be set to true as feature is not yet supported on Azure Stack"),
+		},
+		{
+			name:          "AzureStack AcceleratedNetworking is true",
+			location:      "local",
+			propertiesnil: false,
+			cs: &ContainerService{
+				Location: "local",
+				Properties: &Properties{
+					CustomCloudProfile: &CustomCloudProfile{
+						PortalURL: "https://portal.local.cotoso.com",
+					},
+					OrchestratorProfile: &OrchestratorProfile{
+						OrchestratorType:    Kubernetes,
+						OrchestratorVersion: "1.11.10",
+					},
+					AgentPoolProfiles: []*AgentPoolProfile{
+						{
+							Name:                                "testpool",
+							Count:                               1,
+							VMSize:                              "Standard_D2_v2",
+							AcceleratedNetworkingEnabledWindows: to.BoolPtr(trueVal),
+						},
+					},
+				},
+			},
+			expectedErr: errors.New("AcceleratedNetworkingEnabled or AcceleratedNetworkingEnabledWindows shouldn't be set to true as feature is not yet supported on Azure Stack"),
+		},
 	}
 
 	for _, test := range tests {
@@ -2907,7 +3130,17 @@ func TestValidateLocation(t *testing.T) {
 			cs := getK8sDefaultContainerService(true)
 			cs.Location = test.cs.Location
 			if test.cs.Properties != nil {
-				cs.Properties.CustomCloudProfile = test.cs.Properties.CustomCloudProfile
+				if test.cs.Properties.CustomCloudProfile != nil {
+					cs.Properties.CustomCloudProfile = test.cs.Properties.CustomCloudProfile
+				}
+
+				if test.cs.Properties.OrchestratorProfile != nil {
+					cs.Properties.OrchestratorProfile = test.cs.Properties.OrchestratorProfile
+				}
+
+				if test.cs.Properties.AgentPoolProfiles != nil {
+					cs.Properties.AgentPoolProfiles = test.cs.Properties.AgentPoolProfiles
+				}
 			}
 
 			if test.propertiesnil {

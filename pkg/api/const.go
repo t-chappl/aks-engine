@@ -132,6 +132,8 @@ const (
 	DefaultAADPodIdentityAddonEnabled = false
 	// DefaultACIConnectorAddonEnabled determines the aks-engine provided default for enabling aci connector addon
 	DefaultACIConnectorAddonEnabled = false
+	// DefaultAppGwIngressAddonEnabled determines the aks-engine provided default for enabling appgw ingress addon
+	DefaultAppGwIngressAddonEnabled = false
 	// DefaultClusterAutoscalerAddonEnabled determines the aks-engine provided default for enabling cluster autoscaler addon
 	DefaultClusterAutoscalerAddonEnabled = false
 	// DefaultBlobfuseFlexVolumeAddonEnabled determines the aks-engine provided default for enabling blobfuse flexvolume addon
@@ -176,6 +178,8 @@ const (
 	AADPodIdentityAddonName = "aad-pod-identity"
 	// ACIConnectorAddonName is the name of the aci-connector addon deployment
 	ACIConnectorAddonName = "aci-connector"
+	// AppGwIngressAddonName appgw addon
+	AppGwIngressAddonName = "appgw-ingress"
 	// ClusterAutoscalerAddonName is the name of the cluster autoscaler addon deployment
 	ClusterAutoscalerAddonName = "cluster-autoscaler"
 	// BlobfuseFlexVolumeAddonName is the name of the blobfuse flexvolume addon
@@ -240,6 +244,21 @@ const (
 	DefaultPreserveNodesProperties = true
 	// DefaultEnableVMSSNodePublicIP determines the aks-engine provided default for enable VMSS node public IP
 	DefaultEnableVMSSNodePublicIP = false
+)
+
+// AzureStackCloud Specific Defaults
+const (
+	// DefaultUseInstanceMetadata set to false as Azure Stack today doesn't support instance metadata service
+	DefaultAzureStackUseInstanceMetadata = false
+
+	// DefaultAzureStackAcceleratedNetworking set to false as Azure Stack today doesn't support accelerated networking
+	DefaultAzureStackAcceleratedNetworking = false
+
+	// DefaultAzureStackFaultDomainCount set to 3 as Azure Stack today has minimum 4 node deployment.
+	DefaultAzureStackFaultDomainCount = 3
+
+	// MaxAzureStackManagedDiskSize = size for Kubernetes master etcd disk volumes in GB if > 10 nodes as this is max what Azure Stack supports today.
+	MaxAzureStackManagedDiskSize = "1023"
 )
 
 // WindowsProfile defaults

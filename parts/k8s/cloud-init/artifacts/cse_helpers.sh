@@ -55,7 +55,7 @@ ERR_CIS_APPLY_PASSWORD_CONFIG=115 # Error applying CIS-recommended passwd config
 ERR_AZURE_STACK_GET_ARM_TOKEN=116 # Error generating a token to use with Azure Resource Manager
 ERR_AZURE_STACK_GET_NETWORK_CONFIGURATION=117 # Error fetching the network configuration for the node
 
-OS=$(cat /etc/*-release | grep ^ID= | tr -d 'ID="' | awk '{print toupper($0)}')
+OS=$(sort -r /etc/*-release | gawk 'match($0, /^(ID_LIKE=(coreos)|ID=(.*))$/, a) { print toupper(a[2] a[3]); exit }')
 UBUNTU_OS_NAME="UBUNTU"
 RHEL_OS_NAME="RHEL"
 COREOS_OS_NAME="COREOS"

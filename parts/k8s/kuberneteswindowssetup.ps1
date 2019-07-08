@@ -251,7 +251,8 @@ try
                                -KubeClusterCIDR $global:KubeClusterCIDR `
                                -MasterSubnet $global:MasterSubnet `
                                -KubeServiceCIDR $global:KubeServiceCIDR `
-                               -VNetCIDR $global:VNetCIDR
+                               -VNetCIDR $global:VNetCIDR `
+                               -TargetEnvironment $TargetEnvironment
 
             {{if IsAzureStackCloud}}{{if IsAzureCNI}}
             GenerateAzureStackCNIConfig `

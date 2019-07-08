@@ -11380,6 +11380,12 @@ configureCNI() {
         systemctl restart sys-fs-bpf.mount
         REBOOTREQUIRED=true
     fi
+
+    if [[ "${TARGET_ENVIRONMENT,,}" == "${AZURE_STACK_ENV}"  ]] && [[ "${NETWORK_PLUGIN}" = "azure" ]]; then
+        # set environment to mas when using Azure CNI on Azure Stack
+        # shellcheck disable=SC2002,SC2005
+        echo $(cat "$CNI_CONFIG_DIR/10-azure.conflist" | jq '.plugins[0].ipam.environment = "mas"') > "$CNI_CONFIG_DIR/10-azure.conflist"
+    fi
 }
 
 configureCNIIPTables() {
@@ -11864,7 +11870,7 @@ ERR_CIS_APPLY_PASSWORD_CONFIG=115 # Error applying CIS-recommended passwd config
 ERR_AZURE_STACK_GET_ARM_TOKEN=116 # Error generating a token to use with Azure Resource Manager
 ERR_AZURE_STACK_GET_NETWORK_CONFIGURATION=117 # Error fetching the network configuration for the node
 
-OS=$(cat /etc/*-release | grep ^ID= | tr -d 'ID="' | awk '{print toupper($0)}')
+OS=$(sort -r /etc/*-release | gawk 'match($0, /^(ID_LIKE=(coreos)|ID=(.*))$/, a) { print toupper(a[2] a[3]); exit }')
 UBUNTU_OS_NAME="UBUNTU"
 RHEL_OS_NAME="RHEL"
 COREOS_OS_NAME="COREOS"
@@ -14355,6 +14361,7 @@ MASTER_CONTAINER_ADDONS_PLACEHOLDER
     echo Wants=rpc-statd.service >> /etc/systemd/system/kubelet.service
     sudo /bin/sed -i "s/usr\/local\/bin\/kubelet/opt\/kubelet/g" /etc/systemd/system/kubelet.service
     sudo /bin/sed -i "s/usr\/bin\/etcd/opt\/bin\/etcd/g" /etc/systemd/system/etcd.service
+    sudo /bin/sed -i "s/usr\/local\/bin\/health-monitor.sh/opt\/bin\/health-monitor.sh/g" /etc/systemd/system/kubelet-monitor.service /etc/systemd/system/docker-monitor.service
     /bin/echo DAEMON_ARGS=--name "{{WrapAsVerbatim "variables('masterVMNames')[copyIndex(variables('masterOffset'))]"}}" --initial-advertise-peer-urls "{{WrapAsVerbatim "variables('masterEtcdPeerURLs')[copyIndex(variables('masterOffset'))]"}}" --listen-peer-urls "{{WrapAsVerbatim "variables('masterEtcdPeerURLs')[copyIndex(variables('masterOffset'))]"}}" --advertise-client-urls "{{WrapAsVerbatim "variables('masterEtcdClientURLs')[copyIndex(variables('masterOffset'))]"}}" --listen-client-urls "{{WrapAsVerbatim "concat(variables('masterEtcdClientURLs')[copyIndex(variables('masterOffset'))], ',http://127.0.0.1:', variables('masterEtcdClientPort'))"}}" --initial-cluster-token "k8s-etcd-cluster" --initial-cluster "{{WrapAsVerbatim "variables('masterEtcdClusterStates')[div(variables('masterCount'), 2)]"}} --data-dir "/var/lib/etcddisk"" --initial-cluster-state "new" | tee -a /etc/default/etcd
     /opt/azure/containers/mountetcd.sh
     sudo /bin/chown -R etcd:etcd /var/lib/etcddisk
@@ -14688,6 +14695,7 @@ write_files:
     #!/bin/bash
     sudo /bin/sed -i "s/Description=Kubelet/Description=Kubelet\nRequires=rpc-statd.service/g" /etc/systemd/system/kubelet.service
     sudo /bin/sed -i "s/usr\/local\/bin\/kubelet/opt\/kubelet/g" /etc/systemd/system/kubelet.service
+    sudo /bin/sed -i "s/usr\/local\/bin\/health-monitor.sh/opt\/bin\/health-monitor.sh/g" /etc/systemd/system/kubelet-monitor.service /etc/systemd/system/docker-monitor.service
     /usr/bin/mkdir -p /etc/kubernetes/manifests
     {{if .KubernetesConfig.RequiresDocker}}
     usermod -aG docker {{WrapAsParameter "linuxAdminUsername"}}
@@ -21750,7 +21758,20 @@ var _k8sKubernetesparamsT = []byte(`{{if .HasAadProfile}}
       "type": "string"
     }
  {{end}}
-`)
+ {{if .OrchestratorProfile.KubernetesConfig.IsAppGWIngressEnabled}}
+    ,"appGwSubnet": {
+      "metadata": {
+        "description": "Sets the subnet of the Application Gateway"
+      },
+      "type": "string"
+    }
+    ,"appGwSku": {
+      "metadata": {
+        "description": "Sets the subnet of the Application Gateway"
+      },
+      "type": "string"
+    }
+ {{end}}`)
 
 func k8sKubernetesparamsTBytes() ([]byte, error) {
 	return _k8sKubernetesparamsT, nil
@@ -22093,7 +22114,8 @@ try
                                -KubeClusterCIDR $global:KubeClusterCIDR ` + "`" + `
                                -MasterSubnet $global:MasterSubnet ` + "`" + `
                                -KubeServiceCIDR $global:KubeServiceCIDR ` + "`" + `
-                               -VNetCIDR $global:VNetCIDR
+                               -VNetCIDR $global:VNetCIDR ` + "`" + `
+                               -TargetEnvironment $TargetEnvironment
 
             {{if IsAzureStackCloud}}{{if IsAzureCNI}}
             GenerateAzureStackCNIConfig ` + "`" + `
@@ -22576,7 +22598,9 @@ Set-AzureCNIConfig
         [Parameter(Mandatory=$true)][string]
         $KubeServiceCIDR,
         [Parameter(Mandatory=$true)][string]
-        $VNetCIDR
+        $VNetCIDR,
+        [Parameter(Mandatory=$true)][string]
+        $TargetEnvironment
     )
     # Fill in DNS information for kubernetes.
     $fileName  = [Io.path]::Combine("$AzureCNIConfDir", "10-azure.conflist")
@@ -22587,6 +22611,10 @@ Set-AzureCNIConfig
     $configJson.plugins.AdditionalArgs[0].Value.ExceptionList[1] = $MasterSubnet
     $configJson.plugins.AdditionalArgs[1].Value.DestinationPrefix  = $KubeServiceCIDR
     $configJson.plugins.AdditionalArgs[0].Value.ExceptionList += $VNetCIDR
+
+    if ($TargetEnvironment -ieq "AzureStackCloud") {
+        Add-Member -InputObject $configJson.plugins[0].ipam -MemberType NoteProperty -Name "environment" -Value "mas"
+    }
 
     $configJson | ConvertTo-Json -depth 20 | Out-File -encoding ASCII -filepath $fileName
 }

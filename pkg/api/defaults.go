@@ -233,9 +233,19 @@ func (cs *ContainerService) setOrchestratorDefaults(isUpgrade, isScale bool) {
 		if "" == a.OrchestratorProfile.KubernetesConfig.EtcdDiskSizeGB {
 			switch {
 			case a.TotalNodes() > 20:
-				a.OrchestratorProfile.KubernetesConfig.EtcdDiskSizeGB = DefaultEtcdDiskSizeGT20Nodes
+				if a.IsAzureStackCloud() {
+					// Currently on Azure Stack max size of managed disk size is 1023GB.
+					a.OrchestratorProfile.KubernetesConfig.EtcdDiskSizeGB = MaxAzureStackManagedDiskSize
+				} else {
+					a.OrchestratorProfile.KubernetesConfig.EtcdDiskSizeGB = DefaultEtcdDiskSizeGT20Nodes
+				}
 			case a.TotalNodes() > 10:
-				a.OrchestratorProfile.KubernetesConfig.EtcdDiskSizeGB = DefaultEtcdDiskSizeGT10Nodes
+				if a.IsAzureStackCloud() {
+					// Currently on Azure Stack max size of managed disk size is 1023GB.
+					a.OrchestratorProfile.KubernetesConfig.EtcdDiskSizeGB = MaxAzureStackManagedDiskSize
+				} else {
+					a.OrchestratorProfile.KubernetesConfig.EtcdDiskSizeGB = DefaultEtcdDiskSizeGT10Nodes
+				}
 			case a.TotalNodes() > 3:
 				a.OrchestratorProfile.KubernetesConfig.EtcdDiskSizeGB = DefaultEtcdDiskSizeGT3Nodes
 			default:
@@ -281,7 +291,11 @@ func (cs *ContainerService) setOrchestratorDefaults(isUpgrade, isScale bool) {
 		}
 
 		if a.OrchestratorProfile.KubernetesConfig.UseInstanceMetadata == nil {
-			a.OrchestratorProfile.KubernetesConfig.UseInstanceMetadata = to.BoolPtr(DefaultUseInstanceMetadata)
+			if a.IsAzureStackCloud() {
+				a.OrchestratorProfile.KubernetesConfig.UseInstanceMetadata = to.BoolPtr(DefaultAzureStackUseInstanceMetadata)
+			} else {
+				a.OrchestratorProfile.KubernetesConfig.UseInstanceMetadata = to.BoolPtr(DefaultUseInstanceMetadata)
+			}
 		}
 
 		if !a.HasAvailabilityZones() && a.OrchestratorProfile.KubernetesConfig.LoadBalancerSku == "" {
@@ -484,10 +498,9 @@ func (p *Properties) setMasterProfileDefaults(isUpgrade, isScale bool, cloudName
 		p.MasterProfile.CosmosEtcd = to.BoolPtr(DefaultUseCosmos)
 	}
 
-	// Update fault domain value to 3 for Azure Stack
+	// Update default fault domain value for Azure Stack
 	if p.IsAzureStackCloud() && p.MasterProfile.PlatformFaultDomainCount == nil {
-		faultDomainCount := 3
-		p.MasterProfile.PlatformFaultDomainCount = &faultDomainCount
+		p.MasterProfile.PlatformFaultDomainCount = to.IntPtr(DefaultAzureStackFaultDomainCount)
 	}
 }
 
@@ -544,10 +557,9 @@ func (p *Properties) setAgentProfileDefaults(isUpgrade, isScale bool, cloudName 
 			profile.OSType = Linux
 		}
 
-		// Update fault domain value to 3 for Azure Stack
+		// Update default fault domain value for Azure Stack
 		if p.IsAzureStackCloud() && profile.PlatformFaultDomainCount == nil {
-			faultDomainCount := 3
-			profile.PlatformFaultDomainCount = &faultDomainCount
+			profile.PlatformFaultDomainCount = to.IntPtr(DefaultAzureStackFaultDomainCount)
 		}
 
 		// Accelerated Networking is supported on most general purpose and compute-optimized instance sizes with 2 or more vCPUs.
@@ -555,11 +567,20 @@ func (p *Properties) setAgentProfileDefaults(isUpgrade, isScale bool, cloudName 
 		// On instances that support hyperthreading, Accelerated Networking is supported on VM instances with 4 or more vCPUs.
 		// Supported series are: D/DSv3, E/ESv3, Fsv2, and Ms/Mms.
 		if profile.AcceleratedNetworkingEnabled == nil {
-			profile.AcceleratedNetworkingEnabled = to.BoolPtr(DefaultAcceleratedNetworking && !isUpgrade && !isScale && helpers.AcceleratedNetworkingSupported(profile.VMSize))
+			if p.IsAzureStackCloud() {
+				profile.AcceleratedNetworkingEnabled = to.BoolPtr(DefaultAzureStackAcceleratedNetworking)
+			} else {
+				profile.AcceleratedNetworkingEnabled = to.BoolPtr(DefaultAcceleratedNetworking && !isUpgrade && !isScale && helpers.AcceleratedNetworkingSupported(profile.VMSize))
+			}
 		}
 
 		if profile.AcceleratedNetworkingEnabledWindows == nil {
-			profile.AcceleratedNetworkingEnabledWindows = to.BoolPtr(DefaultAcceleratedNetworkingWindowsEnabled && !isUpgrade && !isScale && helpers.AcceleratedNetworkingSupported(profile.VMSize))
+			if p.IsAzureStackCloud() {
+				// Here we are using same default variable. We will change once we will start supporting AcceleratedNetworking feature in general.
+				profile.AcceleratedNetworkingEnabledWindows = to.BoolPtr(DefaultAzureStackAcceleratedNetworking)
+			} else {
+				profile.AcceleratedNetworkingEnabledWindows = to.BoolPtr(DefaultAcceleratedNetworkingWindowsEnabled && !isUpgrade && !isScale && helpers.AcceleratedNetworkingSupported(profile.VMSize))
+			}
 		}
 
 		if profile.VMSSOverProvisioningEnabled == nil {
