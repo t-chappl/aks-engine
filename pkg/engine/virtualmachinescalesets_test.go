@@ -6,14 +6,12 @@ package engine
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/Azure/go-autorest/autorest/azure"
 	"testing"
-
-	"github.com/Azure/go-autorest/autorest/to"
 
 	"github.com/Azure/aks-engine/pkg/api"
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2018-10-01/compute"
-
+	"github.com/Azure/go-autorest/autorest/azure"
+	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/google/go-cmp/cmp"
 )
 
