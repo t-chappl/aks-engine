@@ -6,6 +6,7 @@ package engine
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/Azure/go-autorest/autorest/azure"
 	"testing"
 
 	"github.com/Azure/go-autorest/autorest/to"
@@ -260,6 +261,36 @@ func TestCreateMasterVMSS(t *testing.T) {
 	if diff != "" {
 		t.Errorf("unexpected diff while expecting equal structs: %s", diff)
 	}
+
+	//test with custom cloud and Azure CNI
+	cs.Properties.CustomCloudProfile = &api.CustomCloudProfile{Environment: &azure.Environment{Name: "AzureStackCloud"}}
+	cs.Properties.OrchestratorProfile.KubernetesConfig.UseManagedIdentity = false
+
+	actual = CreateMasterVMSS(cs)
+
+	expected.VirtualMachineScaleSetProperties.VirtualMachineProfile.OsProfile.CustomData = to.StringPtr(getCustomDataFromJSON(tg.GetMasterCustomDataJSONObject(cs)))
+	expected.VirtualMachineScaleSet.Identity = nil
+	expected.VirtualMachineScaleSetProperties.VirtualMachineProfile.ExtensionProfile.Extensions = &[]compute.VirtualMachineScaleSetExtension{
+		{
+			Name: to.StringPtr("[concat(variables('masterVMNamePrefix'), 'vmssCSE')]"),
+			VirtualMachineScaleSetExtensionProperties: &compute.VirtualMachineScaleSetExtensionProperties{
+				Publisher:               to.StringPtr("Microsoft.Azure.Extensions"),
+				Type:                    to.StringPtr("CustomScript"),
+				TypeHandlerVersion:      to.StringPtr("2.0"),
+				AutoUpgradeMinorVersion: to.BoolPtr(true),
+				Settings:                map[string]interface{}{},
+				ProtectedSettings: map[string]interface{}{
+					"commandToExecute": `[concat('retrycmd_if_failure() { r=$1; w=$2; t=$3; shift && shift && shift; for i in $(seq 1 $r); do timeout $t ${@}; [ $? -eq 0  ] && break || if [ $i -eq $r ]; then return 1; else sleep $w; fi; done };  for i in $(seq 1 1200); do if [ -f /opt/azure/containers/provision.sh ]; then break; fi; if [ $i -eq 1200 ]; then exit 100; else sleep 1; fi; done; ', variables('provisionScriptParametersCommon'),' USER_ASSIGNED_IDENTITY_ID=',' ',' NETWORK_INTERFACE=',concat(variables('masterVMNamePrefix'), 'nic-', copyIndex(variables('masterOffset'))),' SUBNET_PREFIX=',parameters('masterSubnet'),' ',variables('provisionScriptParametersMaster'), ' /usr/bin/nohup /bin/bash -c "/bin/bash /opt/azure/containers/provision.sh >> /var/log/azure/cluster-provision.log 2>&1"')]`,
+				},
+			},
+		},
+	}
+
+	diff = cmp.Diff(actual, expected)
+
+	if diff != "" {
+		t.Errorf("unexpected diff while expecting equal structs: %s", diff)
+	}
 }
 
 func TestCreateAgentVMSS(t *testing.T) {
@@ -384,7 +415,36 @@ func TestCreateAgentVMSS(t *testing.T) {
 		t.Errorf("unexpected diff while expecting equal structs: %s", diff)
 	}
 
+	// Linux with custom cloud
+	cs.Properties.CustomCloudProfile = &api.CustomCloudProfile{Environment: &azure.Environment{Name: "AzureStackCloud"}}
+
+	actual = CreateAgentVMSS(cs, cs.Properties.AgentPoolProfiles[0])
+
+	expected.VirtualMachineScaleSetProperties.VirtualMachineProfile.OsProfile.CustomData = to.StringPtr(getCustomDataFromJSON(tg.GetKubernetesLinuxNodeCustomDataJSONObject(cs, cs.Properties.AgentPoolProfiles[0])))
+	expected.VirtualMachineScaleSetProperties.VirtualMachineProfile.ExtensionProfile.Extensions = &[]compute.VirtualMachineScaleSetExtension{
+		{
+			Name: to.StringPtr("vmssCSE"),
+			VirtualMachineScaleSetExtensionProperties: &compute.VirtualMachineScaleSetExtensionProperties{
+				Publisher:               to.StringPtr("Microsoft.Azure.Extensions"),
+				Type:                    to.StringPtr("CustomScript"),
+				TypeHandlerVersion:      to.StringPtr("2.0"),
+				AutoUpgradeMinorVersion: to.BoolPtr(true),
+				Settings:                map[string]interface{}{},
+				ProtectedSettings: map[string]interface{}{
+					"commandToExecute": `[concat('retrycmd_if_failure() { r=$1; w=$2; t=$3; shift && shift && shift; for i in $(seq 1 $r); do timeout $t ${@}; [ $? -eq 0  ] && break || if [ $i -eq $r ]; then return 1; else sleep $w; fi; done }; ERR_OUTBOUND_CONN_FAIL=50; retrycmd_if_failure 50 1 3 nc -vz k8s.gcr.io 443 && retrycmd_if_failure 50 1 3 nc -vz gcr.io 443 && retrycmd_if_failure 50 1 3 nc -vz docker.io 443 || exit $ERR_OUTBOUND_CONN_FAIL; for i in $(seq 1 1200); do if [ -f /opt/azure/containers/provision.sh ]; then break; fi; if [ $i -eq 1200 ]; then exit 100; else sleep 1; fi; done; ', variables('provisionScriptParametersCommon'),` + generateUserAssignedIdentityClientIDParameter(userAssignedIDEnabled) + `,' NETWORK_INTERFACE=',concat(variables('agentpool1VMNamePrefix'), 'nic-', copyIndex(variables('agentpool1Offset'))),' SUBNET_PREFIX=',parameters('agentpool1Subnet'),' GPU_NODE=false SGX_NODE=false AUDITD_ENABLED=false /usr/bin/nohup /bin/bash -c "/bin/bash /opt/azure/containers/provision.sh >> /var/log/azure/cluster-provision.log 2>&1"')]`,
+				},
+			},
+		},
+	}
+
+	diff = cmp.Diff(actual, expected)
+
+	if diff != "" {
+		t.Errorf("unexpected diff while expecting equal structs: %s", diff)
+	}
+
 	// Now Test AgentVMSS with windows
+	cs.Properties.CustomCloudProfile = nil
 	cs.Properties.AgentPoolProfiles[0].OSType = "Windows"
 	cs.Properties.AgentPoolProfiles[0].AcceleratedNetworkingEnabledWindows = to.BoolPtr(true)
 	cs.Properties.WindowsProfile = &api.WindowsProfile{
@@ -441,6 +501,36 @@ func TestCreateAgentVMSS(t *testing.T) {
 	}
 
 	expected.Tags["resourceNameSuffix"] = to.StringPtr("[variables('winResourceNamePrefix')]")
+
+	diff = cmp.Diff(actual, expected)
+
+	if diff != "" {
+		t.Errorf("unexpected diff while expecting equal structs: %s", diff)
+	}
+
+	// Test AgentVMSS with windows and custom cloud
+	cs.Properties.CustomCloudProfile = &api.CustomCloudProfile{Environment: &azure.Environment{Name: "AzureStackCloud"}}
+
+	actual = CreateAgentVMSS(cs, cs.Properties.AgentPoolProfiles[0])
+
+	expected.VirtualMachineScaleSetProperties.VirtualMachineProfile.OsProfile.CustomData = to.StringPtr(getCustomDataFromJSON(tg.GetKubernetesWindowsNodeCustomDataJSONObject(cs, cs.Properties.AgentPoolProfiles[0])))
+	expected.VirtualMachineProfile.ExtensionProfile = &compute.VirtualMachineScaleSetExtensionProfile{
+		Extensions: &[]compute.VirtualMachineScaleSetExtension{
+			{
+				Name: to.StringPtr("vmssCSE"),
+				VirtualMachineScaleSetExtensionProperties: &compute.VirtualMachineScaleSetExtensionProperties{
+					Publisher:               to.StringPtr("Microsoft.Compute"),
+					Type:                    to.StringPtr("CustomScriptExtension"),
+					TypeHandlerVersion:      to.StringPtr("1.8"),
+					AutoUpgradeMinorVersion: to.BoolPtr(true),
+					Settings:                map[string]interface{}{},
+					ProtectedSettings: map[string]interface{}{
+						"commandToExecute": `[concat('powershell.exe -ExecutionPolicy Unrestricted -command "', '$arguments = ', variables('singleQuote'),'-MasterIP ',variables('kubernetesAPIServerIP'),' -KubeDnsServiceIp ',parameters('kubeDnsServiceIp'),' -MasterFQDNPrefix ',variables('masterFqdnPrefix'),' -Location ',variables('location'),' -TargetEnvironment ',parameters('targetEnvironment'),' -AgentKey ',parameters('clientPrivateKey'),' -AADClientId ',variables('servicePrincipalClientId'),' -AADClientSecret ',variables('singleQuote'),variables('singleQuote'),base64(variables('servicePrincipalClientSecret')),variables('singleQuote'),variables('singleQuote'),' -NetworkInterface ',concat(variables('agentpool1VMNamePrefix'), 'nic-', copyIndex(variables('agentpool1Offset'))),' -SubnetPrefix ',parameters('agentpool1Subnet'),' -NetworkAPIVersion ',variables('apiVersionNetwork'), ' ',variables('singleQuote'), ' ; ', variables('windowsCustomScriptSuffix'), '" > %SYSTEMDRIVE%\AzureData\CustomDataSetupScript.log 2>&1')]`,
+					},
+				},
+			},
+		},
+	}
 
 	diff = cmp.Diff(actual, expected)
 
