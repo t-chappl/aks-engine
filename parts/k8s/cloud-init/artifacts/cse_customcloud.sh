@@ -150,5 +150,7 @@ configureAzureStackInterfaces() {
 
     jq "{Interfaces: [{MacAddress: .properties.macAddress, IsPrimary: .properties.primary, IPSubnets: [{Prefix: \"$SUBNET_PREFIX\", IPAddresses: .properties.ipConfigurations | [.[] | {Address: .properties.privateIPAddress, IsPrimary: .properties.primary}]}]}]}" $NETWORK_INTERFACES_FILE > $AZURE_CNI_INTERFACE_FILE
 
+    chmod 0444 $AZURE_CNI_INTERFACE_FILE
+
     set -x
 }

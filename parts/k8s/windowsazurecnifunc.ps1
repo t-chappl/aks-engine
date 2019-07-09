@@ -190,5 +190,7 @@ GenerateAzureStackCNIConfig
     })}
 
     $config | ConvertTo-Json -Depth 6 | Out-File -FilePath $azureCNIInterfaceFile -Encoding ascii
+
+    Set-ItemProperty -Path $azureCNIInterfaceFile -Name IsReadOnly -Value $true
 }
 
