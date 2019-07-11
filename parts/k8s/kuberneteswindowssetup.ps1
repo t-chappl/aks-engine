@@ -45,15 +45,7 @@ param(
     {{if IsAzureStackCloud}}{{if IsAzureCNI}}
     [parameter(Mandatory=$true)]
     [ValidateNotNullOrEmpty()]
-    $NetworkInterface,
-
-    [parameter(Mandatory=$true)]
-    [ValidateNotNullOrEmpty()]
     $NetworkAPIVersion,
-
-    [parameter(Mandatory=$true)]
-    [ValidateNotNullOrEmpty()]
-    $SubnetPrefix,
     {{end}}{{end}}
 
     [parameter(Mandatory=$true)]
@@ -261,9 +253,7 @@ try
                 -ResourceGroup $global:ResourceGroup `
                 -AADClientId $AADClientId `
                 -AADClientSecret $([System.Text.Encoding]::ASCII.GetString([System.Convert]::FromBase64String($AADClientSecret))) `
-                -NetworkInterface $NetworkInterface `
                 -NetworkAPIVersion $NetworkAPIVersion `
-                -SubnetPrefix $SubnetPrefix `
                 -ServiceManagementEndpoint "{{ GetServiceManagementEndpoint }}" `
                 -ActiveDirectoryEndpoint "{{ GetActiveDirectoryEndpoint }}" `
                 -ResourceManagerEndpoint "{{ GetResourceManagerEndpoint }}" `
