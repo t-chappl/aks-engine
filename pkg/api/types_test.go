@@ -4440,6 +4440,8 @@ func TestFormatAzureProdFQDN(t *testing.T) {
 		"santest.southcentralus.cloudapp.azure.com",
 		"santest.southeastasia.cloudapp.azure.com",
 		"santest.southindia.cloudapp.azure.com",
+		"santest.uaecentral.cloudapp.azure.com",
+		"santest.uaenorth.cloudapp.azure.com",
 		"santest.uksouth.cloudapp.azure.com",
 		"santest.ukwest.cloudapp.azure.com",
 		"santest.usdodcentral.cloudapp.usgovcloudapi.net",
@@ -4460,8 +4462,6 @@ func TestFormatAzureProdFQDN(t *testing.T) {
 		"santest.usgovarizona.cloudapp.usgovcloudapi.net",
 		"santest.usgovtexas.cloudapp.usgovcloudapi.net",
 		"santest.francecentral.cloudapp.azure.com",
-		"santest.uaenorth.cloudapp.azure.com",
-		"santest.uaecentral.cloudapp.azure.com",
 	}
 
 	if !reflect.DeepEqual(actual, expected) {
@@ -4512,6 +4512,8 @@ func TestFormatProdFQDNByLocation(t *testing.T) {
 		"santest.southcentralus.cloudapp.azure.com",
 		"santest.southeastasia.cloudapp.azure.com",
 		"santest.southindia.cloudapp.azure.com",
+		"santest.uaecentral.cloudapp.azure.com",
+		"santest.uaenorth.cloudapp.azure.com",
 		"santest.uksouth.cloudapp.azure.com",
 		"santest.ukwest.cloudapp.azure.com",
 		"santest.usdodcentral.cloudapp.usgovcloudapi.net",
@@ -4532,8 +4534,6 @@ func TestFormatProdFQDNByLocation(t *testing.T) {
 		"santest.usgovarizona.cloudapp.usgovcloudapi.net",
 		"santest.usgovtexas.cloudapp.usgovcloudapi.net",
 		"santest.francecentral.cloudapp.azure.com",
-		"santest.uaenorth.cloudapp.azure.com",
-		"santest.uaecentral.cloudapp.azure.com",
 	}
 
 	if !reflect.DeepEqual(actual, expected) {
@@ -4866,7 +4866,7 @@ func TestGetCustomCloudName(t *testing.T) {
 }
 
 func TestGetCustomEnvironmentJSON(t *testing.T) {
-	expectedResult := `{"name":"azurestackcloud","managementPortalURL":"https://management.local.azurestack.external/","publishSettingsURL":"https://management.local.azurestack.external/publishsettings/index","serviceManagementEndpoint":"https://management.azurestackci15.onmicrosoft.com/36f71706-54df-4305-9847-5b038a4cf189","resourceManagerEndpoint":"https://management.local.azurestack.external/","activeDirectoryEndpoint":"https://login.windows.net/","galleryEndpoint":"https://portal.local.azurestack.external=30015/","keyVaultEndpoint":"https://vault.azurestack.external/","graphEndpoint":"https://graph.windows.net/","serviceBusEndpoint":"https://servicebus.azurestack.external/","batchManagementEndpoint":"https://batch.azurestack.external/","storageEndpointSuffix":"core.azurestack.external","sqlDatabaseDNSSuffix":"database.azurestack.external","trafficManagerDNSSuffix":"trafficmanager.cn","keyVaultDNSSuffix":"vault.azurestack.external","serviceBusEndpointSuffix":"servicebus.azurestack.external","serviceManagementVMDNSSuffix":"chinacloudapp.cn","resourceManagerVMDNSSuffix":"cloudapp.azurestack.external","containerRegistryDNSSuffix":"azurecr.io","tokenAudience":"https://management.azurestack.external/"}`
+	expectedResult := `{"name":"azurestackcloud","managementPortalURL":"https://management.local.azurestack.external/","publishSettingsURL":"https://management.local.azurestack.external/publishsettings/index","serviceManagementEndpoint":"https://management.azurestackci15.onmicrosoft.com/36f71706-54df-4305-9847-5b038a4cf189","resourceManagerEndpoint":"https://management.local.azurestack.external/","activeDirectoryEndpoint":"https://login.windows.net/","galleryEndpoint":"https://portal.local.azurestack.external=30015/","keyVaultEndpoint":"https://vault.azurestack.external/","graphEndpoint":"https://graph.windows.net/","serviceBusEndpoint":"https://servicebus.azurestack.external/","batchManagementEndpoint":"https://batch.azurestack.external/","storageEndpointSuffix":"core.azurestack.external","sqlDatabaseDNSSuffix":"database.azurestack.external","trafficManagerDNSSuffix":"trafficmanager.cn","keyVaultDNSSuffix":"vault.azurestack.external","serviceBusEndpointSuffix":"servicebus.azurestack.external","serviceManagementVMDNSSuffix":"chinacloudapp.cn","resourceManagerVMDNSSuffix":"cloudapp.azurestack.external","containerRegistryDNSSuffix":"azurecr.io","cosmosDBDNSSuffix":"","tokenAudience":"https://management.azurestack.external/","resourceIdentifiers":{"graph":"","keyVault":"","datalake":"","batch":"","operationalInsights":""}}`
 	testcases := []struct {
 		name       string
 		properties Properties
@@ -4947,6 +4947,8 @@ func TestGetLocations(t *testing.T) {
 		"southcentralus",
 		"southeastasia",
 		"southindia",
+		"uaecentral",
+		"uaenorth",
 		"uksouth",
 		"ukwest",
 		"usdodcentral",
@@ -4967,8 +4969,6 @@ func TestGetLocations(t *testing.T) {
 		"usgovarizona",
 		"usgovtexas",
 		"francecentral",
-		"uaenorth",
-		"uaecentral",
 	}
 	actual := mockCSDefault.GetLocations()
 	if !reflect.DeepEqual(expected, actual) {

@@ -60,8 +60,6 @@ echo "  - moby v${MOBY_VERSION}" >> ${RELEASE_NOTES_FILEPATH}
 installGPUDrivers
 echo "  - nvidia-docker2 nvidia-container-runtime" >> ${RELEASE_NOTES_FILEPATH}
 
-installClearContainersRuntime
-
 VNET_CNI_VERSIONS="
 1.0.22
 1.0.18
@@ -156,6 +154,7 @@ done
 KUBE_ADDON_MANAGER_VERSIONS="
 9.0.1
 9.0
+8.9.1
 8.9
 8.8
 8.7
@@ -319,7 +318,10 @@ for BLOBFUSE_FLEXVOLUME_VERSION in ${BLOBFUSE_FLEXVOLUME_VERSIONS}; do
     echo "  - ${CONTAINER_IMAGE}" >> ${RELEASE_NOTES_FILEPATH}
 done
 
-IP_MASQ_AGENT_VERSIONS="2.0.0"
+IP_MASQ_AGENT_VERSIONS="
+2.3.0
+2.0.0
+"
 for IP_MASQ_AGENT_VERSION in ${IP_MASQ_AGENT_VERSIONS}; do
     # TODO remove the gcr.io/google-containers image once AKS switches to use k8s.gcr.io
     DEPRECATED_CONTAINER_IMAGE="gcr.io/google-containers/ip-masq-agent-amd64:v${IP_MASQ_AGENT_VERSION}"
@@ -361,18 +363,18 @@ echo "  - busybox" >> ${RELEASE_NOTES_FILEPATH}
 # TODO: fetch supported k8s versions from an aks-engine command instead of hardcoding them here
 K8S_VERSIONS="
 1.15.0
+1.14.4
+1.14.4-azs
 1.14.3
 1.14.3-azs
-1.14.1
-1.14.1-azs
+1.13.8
+1.13.8-azs
 1.13.7
 1.13.7-azs
-1.13.5
-1.13.5-azs
-1.12.9
-1.12.9-azs
 1.12.8
 1.12.8-azs
+1.12.7
+1.12.7-azs
 1.11.10
 1.11.10-azs
 1.11.9

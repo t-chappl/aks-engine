@@ -206,7 +206,7 @@ func TestAssignDefaultAddonImages(t *testing.T) {
 		MetricsServerAddonName:             "k8s.gcr.io/metrics-server-amd64:v0.2.1",
 		NVIDIADevicePluginAddonName:        "nvidia/k8s-device-plugin:1.10",
 		ContainerMonitoringAddonName:       "microsoft/oms:ciprod04232019",
-		IPMASQAgentAddonName:               "k8s.gcr.io/ip-masq-agent-amd64:v2.0.0",
+		IPMASQAgentAddonName:               "k8s.gcr.io/ip-masq-agent-amd64:v2.3.0",
 		AzureCNINetworkMonitoringAddonName: "mcr.microsoft.com/containernetworking/networkmonitor:v0.0.6",
 		DNSAutoscalerAddonName:             "k8s.gcr.io/cluster-proportional-autoscaler-amd64:1.1.1",
 		HeapsterAddonName:                  "k8s.gcr.io/heapster-amd64:v1.5.4",
@@ -1493,6 +1493,7 @@ func TestWindowsProfileDefaults(t *testing.T) {
 		name                   string // test case name
 		windowsProfile         WindowsProfile
 		expectedWindowsProfile WindowsProfile
+		isAzureStack           bool
 	}{
 		{
 			"defaults",
@@ -1508,6 +1509,7 @@ func TestWindowsProfileDefaults(t *testing.T) {
 				WindowsDockerVersion:  "",
 				SSHEnabled:            false,
 			},
+			false,
 		},
 		{
 			"user overrides",
@@ -1528,12 +1530,32 @@ func TestWindowsProfileDefaults(t *testing.T) {
 				WindowsDockerVersion:  "",
 				SSHEnabled:            false,
 			},
+			false,
+		},
+		{
+			"Azure Stack defaults",
+			WindowsProfile{},
+			WindowsProfile{
+				WindowsPublisher:      DefaultWindowsPublisher,
+				WindowsOffer:          DefaultAzureStackWindowsOffer,
+				WindowsSku:            DefaultAzureStackWindowsSku,
+				ImageVersion:          DefaultAzureStackImageVersion,
+				AdminUsername:         "",
+				AdminPassword:         "",
+				WindowsImageSourceURL: "",
+				WindowsDockerVersion:  "",
+				SSHEnabled:            false,
+			},
+			true,
 		},
 	}
 
 	for _, test := range tests {
 		mockAPI := getMockAPIProperties("1.14.0")
 		mockAPI.WindowsProfile = &test.windowsProfile
+		if test.isAzureStack {
+			mockAPI.CustomCloudProfile = &CustomCloudProfile{}
+		}
 		mockAPI.setWindowsProfileDefaults(false, false)
 		if mockAPI.WindowsProfile.WindowsPublisher != test.expectedWindowsProfile.WindowsPublisher {
 			t.Fatalf("setWindowsProfileDefaults() test case %v did not return right default values %v != %v", test.name, mockAPI.WindowsProfile.WindowsPublisher, test.expectedWindowsProfile.WindowsPublisher)

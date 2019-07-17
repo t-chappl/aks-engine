@@ -413,10 +413,14 @@ func CreateAgentVMSS(cs *api.ContainerService, profile *api.AgentPoolProfile) Vi
 
 	vmssProperties := compute.VirtualMachineScaleSetProperties{
 		SinglePlacementGroup: profile.SinglePlacementGroup,
-		Overprovision:        to.BoolPtr(false),
+		Overprovision:        profile.VMSSOverProvisioningEnabled,
 		UpgradePolicy: &compute.UpgradePolicy{
 			Mode: compute.Manual,
 		},
+	}
+
+	if to.Bool(profile.VMSSOverProvisioningEnabled) {
+		vmssProperties.DoNotRunExtensionsOnOverprovisionedVMs = to.BoolPtr(true)
 	}
 
 	vmssVMProfile := compute.VirtualMachineScaleSetVMProfile{}
@@ -698,8 +702,10 @@ func CreateAgentVMSS(cs *api.ContainerService, profile *api.AgentPoolProfile) Vi
 
 		if cs.Properties.IsHostedMasterProfile() {
 			if profile.IsWindows() {
+				aksBillingExtension.Name = to.StringPtr(fmt.Sprintf("[concat(variables('%sVMNamePrefix'), '-AKSWindowsBilling')]", profile.Name))
 				aksBillingExtension.Type = to.StringPtr("Compute.AKS.Windows.Billing")
 			} else {
+				aksBillingExtension.Name = to.StringPtr(fmt.Sprintf("[concat(variables('%sVMNamePrefix'), '-AKSLinuxBilling')]", profile.Name))
 				aksBillingExtension.Type = to.StringPtr("Compute.AKS.Linux.Billing")
 			}
 		} else {
